@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta />
+    <title>Statego</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png" />
+    <style>
+      html,
+      body {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: rgb(206, 233, 219); /* or replace with 'beige' */
+      }
+
+
+      img,
+      audio {
+        display: none;
+      }
+    </style>
+    <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="./src/index.js"></script>
+    <!-- <script src="./src/field.js"></script> -->
+
+  </head>
+  <body>
+    <body onload="init();">
+      <canvas id="gameCanvas" width="512" height="640"></canvas>
+    </body>
+  </body>
+</html>
