@@ -133,9 +133,7 @@ class possibleMovesContainer extends createjs.Container {
       const radius = 10;
       const x = possibleMovesList[i].x * tileSize + tileSize / 2;
       const y = possibleMovesList[i].y * tileSize + tileSize / 2;
-      const color = fieldOccupiedByTeam(possibleMovesList[i].x, possibleMovesList[i].y)
-        ? "orange"
-        : "green";
+      const color = fieldOccupiedByTeam(possibleMovesList[i].x, possibleMovesList[i].y) ? "orange" : "green";
       circle.graphics.beginFill(color).drawCircle(x, y, radius);
       this.addChild(circle);
     }
@@ -167,22 +165,14 @@ function selectFigure(fieldX, fieldY) {
 
 function figureStartsFight(movingFigureIndex) {
   const opponentTeam = allFigures[movingFigureIndex].team == "yellow" ? "red" : "yellow";
-  for (
-    let opponentFigureIndex = 0;
-    opponentFigureIndex < allFigures.length;
-    opponentFigureIndex++
-  ) {
+  for (let opponentFigureIndex = 0; opponentFigureIndex < allFigures.length; opponentFigureIndex++) {
     if (
       allFigures[opponentFigureIndex].team === opponentTeam &&
       allFigures[opponentFigureIndex].field.x === allFigures[movingFigureIndex].field.x &&
       allFigures[opponentFigureIndex].field.y === allFigures[movingFigureIndex].field.y
     ) {
-      const movingFigureObj = characters.find(
-        (ch) => ch.id === allFigures[movingFigureIndex].characterID
-      );
-      const opponentFigureObj = characters.find(
-        (ch) => ch.id === allFigures[opponentFigureIndex].characterID
-      );
+      const movingFigureObj = characters.find((ch) => ch.id === allFigures[movingFigureIndex].characterID);
+      const opponentFigureObj = characters.find((ch) => ch.id === allFigures[opponentFigureIndex].characterID);
       let indicesToDelete = [];
       if (movingFigureObj.n === opponentFigureObj.n) {
         indicesToDelete = [opponentFigureIndex, movingFigureIndex];
@@ -207,9 +197,13 @@ function deleteCharactersAtIndices(indicesToDelete) {
   });
 }
 
-function moveFigure(selectedIndex, fieldX, fieldY) {
+function moveSelectedFigure(selectedIndex, fieldX, fieldY) {
   for (const move of possibleMovesRenderer.possibleMovesList) {
     if (move.x == fieldX && move.y == fieldY) {
+      socket.emit("figureMoved", {
+        from: { x: allFigures[selectedIndex].field.x, y: allFigures[selectedIndex].field.y },
+        to: { x: fieldX, y: fieldY },
+      });
       allFigures[selectedIndex].moveToField(move.x, move.y);
       if (fieldOccupiedByTeam(fieldX, fieldY) !== false) {
         figureStartsFight(selectedIndex);
@@ -219,6 +213,20 @@ function moveFigure(selectedIndex, fieldX, fieldY) {
     }
   }
   return false;
+}
+
+function moveFigureFromTo(fromX, fromY, toX, toY) {
+  for (let i = 0; i < allFigures.length; i++) {
+    if (allFigures[i].field.x == fromX && allFigures[i].field.y == fromY) {
+      allFigures[i].moveToField(toX, toY);
+      if (fieldOccupiedByTeam(toX, toY) !== false) {
+        figureStartsFight(i);
+      }
+      deselectAllFigures(allFigures, possibleMovesRenderer);
+      return;
+    }
+  }
+  throw new Error(`Could not move Figure from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
 }
 
 function deselectAllFigures() {
@@ -236,7 +244,7 @@ function clickedOnField(evt) {
   // MOVING
   for (let i = 0; i < allFigures.length; i++) {
     if (allFigures[i].isSelected == true) {
-      const movePossible = moveFigure(i, fieldX, fieldY);
+      const movePossible = moveSelectedFigure(i, fieldX, fieldY);
       if (movePossible) return;
       else break;
     }
@@ -272,10 +280,9 @@ function drawGameField() {
 
 // ------------ ENTRY POINT ------------
 function init() {
-  const socket = io();
   stage = new createjs.Stage("gameCanvas");
   loader = new createjs.LoadQueue(false);
-  loader.addEventListener("complete", startGame);
+  loader.addEventListener("complete", renderGame);
   loader.loadManifest(
     characters
       .map((char) => [
@@ -284,11 +291,27 @@ function init() {
       ])
       .flat(),
     true,
-    "./assets/"
+    "/assets/"
   );
+
+  connectToServer();
 }
 
-function startGame() {
+function connectToServer() {
+  socket = io();
+  const url = new URL(window.location.href);
+  const urlSegments = url.pathname.split("/");
+  gameId = urlSegments[2];
+  socket.emit("joinGame", gameId);
+  console.log(`Client: Joined Game (gameID=${gameId})`);
+
+  socket.on("moveFigure", (move) => {
+    moveFigureFromTo(move.from.x, move.from.y, move.to.x, move.to.y);
+    console.log("moveFigure", move.from.x, move.from.y, move.to.x, move.to.y);
+  });
+}
+
+function renderGame() {
   drawGameField();
 
   allFigures = [
