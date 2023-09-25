@@ -43,14 +43,20 @@ const nFieldsHeight = 5;
 class Figure extends createjs.Container {
   constructor(characterID, field, team) {
     super();
-    this.bitmapImage = new createjs.Bitmap(loader.getResult(`${characterID}_${team}`));
-    this.addChild(this.bitmapImage);
-
+    // this.bitmapImage = new createjs.Bitmap(loader.getResult(`${characterID}_${team}`));
+    // this.addChild(this.bitmapImage);
     this.characterID = characterID;
     this.moveToField(field.x, field.y);
     this.isSelected = false;
 
     this.team = team;
+    this.loadImage();
+  }
+
+  loadImage() {
+    this.removeChild(this.bitmapImage);
+    this.bitmapImage = new createjs.Bitmap(loader.getResult(`${this.characterID}_${this.team}`));
+    this.addChild(this.bitmapImage);
   }
 
   delete() {
@@ -141,38 +147,42 @@ class possibleMovesContainer extends createjs.Container {
 }
 
 function fieldOccupiedByTeam(fieldX, fieldY) {
-  for (let i = 0; i < allFigures.length; i++) {
-    if (allFigures[i].field.x == fieldX && allFigures[i].field.y == fieldY) {
-      return allFigures[i].team;
+  figureContainer.children.forEach((figure) => {
+    if (figure.field.x == fieldX && figure.field.y == fieldY) {
+      return figure.team;
     }
-  }
+  });
   return false;
 }
 
 function selectFigure(fieldX, fieldY) {
-  deselectAllFigures(allFigures, possibleMovesRenderer);
+  deselectAllFigures();
 
-  for (let i = 0; i < allFigures.length; i++) {
-    if (allFigures[i].field.x == fieldX && allFigures[i].field.y == fieldY) {
-      allFigures[i].isSelected = true;
-      possibleMovesRenderer.render(allFigures[i].getPossibleMoves());
+  figureContainer.children.forEach((figure) => {
+    if (figure.field.x == fieldX && figure.field.y == fieldY) {
+      figure.isSelected = true;
+      possibleMovesRenderer.render(figure.getPossibleMoves());
       stage.update(); // maybe remove
-      return true;
     }
-  }
-  return false;
+  });
 }
 
 function figureStartsFight(movingFigureIndex) {
-  const opponentTeam = allFigures[movingFigureIndex].team == "yellow" ? "red" : "yellow";
-  for (let opponentFigureIndex = 0; opponentFigureIndex < allFigures.length; opponentFigureIndex++) {
+  const movingFigure = figureContainer.getChildAt(movingFigureIndex);
+  const opponentTeam = movingFigure.team == "yellow" ? "red" : "yellow";
+  for (
+    let opponentFigureIndex = 0;
+    opponentFigureIndex < figureContainer.children.length;
+    opponentFigureIndex++
+  ) {
+    const opponentFigure = figureContainer.getChildAt(opponentFigureIndex);
     if (
-      allFigures[opponentFigureIndex].team === opponentTeam &&
-      allFigures[opponentFigureIndex].field.x === allFigures[movingFigureIndex].field.x &&
-      allFigures[opponentFigureIndex].field.y === allFigures[movingFigureIndex].field.y
+      opponentFigure.team === opponentTeam &&
+      opponentFigure.field.x === movingFigure.field.x &&
+      opponentFigure.field.y === movingFigure.field.y
     ) {
-      const movingFigureObj = characters.find((ch) => ch.id === allFigures[movingFigureIndex].characterID);
-      const opponentFigureObj = characters.find((ch) => ch.id === allFigures[opponentFigureIndex].characterID);
+      const movingFigureObj = characters.find((ch) => ch.id === movingFigure.characterID);
+      const opponentFigureObj = characters.find((ch) => ch.id === opponentFigure.characterID);
       let indicesToDelete = [];
       if (movingFigureObj.n === opponentFigureObj.n) {
         indicesToDelete = [opponentFigureIndex, movingFigureIndex];
@@ -192,23 +202,22 @@ function figureStartsFight(movingFigureIndex) {
 function deleteCharactersAtIndices(indicesToDelete) {
   indicesToDelete.sort((a, b) => b - a);
   indicesToDelete.forEach((index) => {
-    allFigures[index].delete();
-    allFigures.splice(index, 1);
+    figureContainer.removeChildAt(index);
   });
 }
 
-function moveSelectedFigure(selectedIndex, fieldX, fieldY) {
+function moveSelectedFigure(selectedFigure, fieldX, fieldY) {
   for (const move of possibleMovesRenderer.possibleMovesList) {
     if (move.x == fieldX && move.y == fieldY) {
       socket.emit("figureMoved", {
-        from: { x: allFigures[selectedIndex].field.x, y: allFigures[selectedIndex].field.y },
+        from: { x: selectedFigure.field.x, y: selectedFigure.field.y },
         to: { x: fieldX, y: fieldY },
       });
-      allFigures[selectedIndex].moveToField(move.x, move.y);
+      selectedFigure.moveToField(move.x, move.y);
       if (fieldOccupiedByTeam(fieldX, fieldY) !== false) {
         figureStartsFight(selectedIndex);
       }
-      deselectAllFigures(allFigures, possibleMovesRenderer);
+      deselectAllFigures();
       return true;
     }
   }
@@ -216,24 +225,24 @@ function moveSelectedFigure(selectedIndex, fieldX, fieldY) {
 }
 
 function moveFigureFromTo(fromX, fromY, toX, toY) {
-  for (let i = 0; i < allFigures.length; i++) {
-    if (allFigures[i].field.x == fromX && allFigures[i].field.y == fromY) {
-      allFigures[i].moveToField(toX, toY);
+  figureContainer.children.forEach((figure) => {
+    if (figure.field.x == fromX && figure.field.y == fromY) {
+      figure.moveToField(toX, toY);
       if (fieldOccupiedByTeam(toX, toY) !== false) {
         figureStartsFight(i);
       }
-      deselectAllFigures(allFigures, possibleMovesRenderer);
+      deselectAllFigures();
       return;
     }
-  }
-  throw new Error(`Could not move Figure from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
+    throw new Error(`Could not move Figure from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
+  });
 }
 
 function deselectAllFigures() {
   possibleMovesRenderer.removeAllChildren();
-  for (let i = 0; i < allFigures.length; i++) {
-    allFigures[i].isSelected = false;
-  }
+  figureContainer.children.forEach((figure) => {
+    figure.isSelected = false;
+  });
   stage.update();
 }
 
@@ -241,21 +250,18 @@ function clickedOnField(evt) {
   const fieldX = Math.floor(evt.stageX / tileSize);
   const fieldY = Math.floor(evt.stageY / tileSize);
 
+  let figureHasMoved = false;
+
   // MOVING
-  for (let i = 0; i < allFigures.length; i++) {
-    if (allFigures[i].isSelected == true) {
-      const movePossible = moveSelectedFigure(i, fieldX, fieldY);
-      if (movePossible) return;
-      else break;
+  figureContainer.children.forEach((figure) => {
+    if (figure.isSelected === true) {
+      const movePossible = moveSelectedFigure(figure, fieldX, fieldY);
+      if (movePossible) figureHasMoved = true;
     }
-  }
+  });
 
   // SELECTING
-  const selectPossible = selectFigure(fieldX, fieldY);
-  if (selectPossible) return;
-  else {
-    deselectAllFigures();
-  }
+  if (!figureHasMoved) selectFigure(fieldX, fieldY);
 }
 
 function drawGameField() {
@@ -282,6 +288,9 @@ function drawGameField() {
 function init() {
   stage = new createjs.Stage("gameCanvas");
   loader = new createjs.LoadQueue(false);
+  figureContainer = new createjs.Container();
+  possibleMovesRenderer = new possibleMovesContainer();
+
   loader.addEventListener("complete", renderGame);
   loader.loadManifest(
     characters
@@ -295,6 +304,7 @@ function init() {
   );
 
   connectToServer();
+  stage.addChild(figureContainer);
 }
 
 function connectToServer() {
@@ -305,42 +315,26 @@ function connectToServer() {
   socket.emit("joinGame", gameId);
   console.log(`Client: Joined Game (gameID=${gameId})`);
 
-  socket.on("moveFigure", (move) => {
-    moveFigureFromTo(move.from.x, move.from.y, move.to.x, move.to.y);
-    console.log("moveFigure", move.from.x, move.from.y, move.to.x, move.to.y);
-  });
+  socket.on("loadFigures", (figures) => loadFigures(figures));
+  socket.on("moveFigure", (move) => moveFigureFromTo(move.from.x, move.from.y, move.to.x, move.to.y));
 }
 
 function renderGame() {
   drawGameField();
 
-  allFigures = [
-    new Figure("bomb", { x: 0, y: 0 }, "yellow"),
-    new Figure("spy", { x: 1, y: 0 }, "yellow"),
-    new Figure("runner", { x: 2, y: 0 }, "yellow"),
-    new Figure("runner", { x: 0, y: 1 }, "yellow"),
-    new Figure("miner", { x: 3, y: 0 }, "yellow"),
-    new Figure("assassin", { x: 1, y: 1 }, "yellow"),
-    new Figure("killer", { x: 2, y: 1 }, "yellow"),
-    new Figure("mr_x", { x: 3, y: 1 }, "yellow"),
-    new Figure("bomb", { x: 0, y: 4 }, "red"),
-    new Figure("spy", { x: 1, y: 4 }, "red"),
-    new Figure("runner", { x: 2, y: 4 }, "red"),
-    new Figure("runner", { x: 0, y: 3 }, "red"),
-    new Figure("miner", { x: 3, y: 4 }, "red"),
-    new Figure("assassin", { x: 1, y: 3 }, "red"),
-    new Figure("killer", { x: 2, y: 3 }, "red"),
-    new Figure("mr_x", { x: 3, y: 3 }, "red"),
-  ];
+  figureContainer.children.forEach((figure) => figure.loadImage());
 
-  for (let i = 0; i < allFigures.length; i++) {
-    stage.addChild(allFigures[i]);
-  }
-
-  possibleMovesRenderer = new possibleMovesContainer();
   stage.addChild(possibleMovesRenderer);
 
   stage.on("stagemousedown", (evt) => clickedOnField(evt));
 
+  stage.update();
+}
+
+function loadFigures(figures) {
+  figureContainer.removeAllChildren();
+  for (const figure of figures) {
+    figureContainer.addChild(new Figure(figure.id, figure.position, figure.team));
+  }
   stage.update();
 }

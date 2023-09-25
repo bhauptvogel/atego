@@ -7,6 +7,7 @@ const server = http.createServer(app);
 const io = socketIO(server);
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
+const db = require("./db");
 
 app.get("/", (req, res) => {
   res.redirect("/game/new");
@@ -33,15 +34,19 @@ io.on("connection", (socket) => {
     if (!room) {
       socket.join(gameId);
       joinGame(socket.id, gameId);
+      db.pushMockFiguresToDB(gameId);
     } else if (room.size == 1) {
       socket.join(gameId);
       joinGame(socket.id, gameId);
       io.to(gameId).emit("startGame");
+
+      // testing
+      io.to(gameId).emit("loadFigures", db.getMockFiguresOfGame(gameId));
     } else if (room.size >= 2) {
       socket.emit("err", "Room full");
       console.error("Server: The room is full!");
     } else {
-      throw new Error("Server: The room does exist but has size == 1");
+      throw new Error("Server: The room does exist but has size == 0");
     }
   });
   socket.on("figureMoved", (move) => {
