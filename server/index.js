@@ -52,6 +52,7 @@ io.on("connection", (socket) => {
   socket.on("figureMoved", (move) => {
     const gameId = findPlayerGame(socket.id);
     console.log("figureMoved " + JSON.stringify(move));
+    // TODO: save in database
     socket.to(gameId).emit("moveFigure", move);
   });
   socket.on("disconnect", () => {

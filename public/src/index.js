@@ -43,8 +43,6 @@ const nFieldsHeight = 5;
 class Figure extends createjs.Container {
   constructor(characterID, field, team) {
     super();
-    // this.bitmapImage = new createjs.Bitmap(loader.getResult(`${characterID}_${team}`));
-    // this.addChild(this.bitmapImage);
     this.characterID = characterID;
     this.moveToField(field.x, field.y);
     this.isSelected = false;
@@ -147,12 +145,14 @@ class possibleMovesContainer extends createjs.Container {
 }
 
 function fieldOccupiedByTeam(fieldX, fieldY) {
+  let output = false;
   figureContainer.children.forEach((figure) => {
     if (figure.field.x == fieldX && figure.field.y == fieldY) {
-      return figure.team;
+      output = figure.team;
+      return;
     }
   });
-  return false;
+  return output;
 }
 
 function selectFigure(fieldX, fieldY) {
@@ -167,15 +167,9 @@ function selectFigure(fieldX, fieldY) {
   });
 }
 
-function figureStartsFight(movingFigureIndex) {
-  const movingFigure = figureContainer.getChildAt(movingFigureIndex);
+function figureStartsFight(movingFigure) {
   const opponentTeam = movingFigure.team == "yellow" ? "red" : "yellow";
-  for (
-    let opponentFigureIndex = 0;
-    opponentFigureIndex < figureContainer.children.length;
-    opponentFigureIndex++
-  ) {
-    const opponentFigure = figureContainer.getChildAt(opponentFigureIndex);
+  figureContainer.children.forEach((opponentFigure) => {
     if (
       opponentFigure.team === opponentTeam &&
       opponentFigure.field.x === movingFigure.field.x &&
@@ -183,29 +177,24 @@ function figureStartsFight(movingFigureIndex) {
     ) {
       const movingFigureObj = characters.find((ch) => ch.id === movingFigure.characterID);
       const opponentFigureObj = characters.find((ch) => ch.id === opponentFigure.characterID);
-      let indicesToDelete = [];
       if (movingFigureObj.n === opponentFigureObj.n) {
-        indicesToDelete = [opponentFigureIndex, movingFigureIndex];
+        figureContainer.removeChild(opponentFigure);
+        figureContainer.removeChild(movingFigure);
       } else if (movingFigureObj.beats.includes(opponentFigureObj.n)) {
-        indicesToDelete = [opponentFigureIndex];
+        figureContainer.removeChild(opponentFigure);
       } else if (opponentFigureObj.beats.includes(movingFigureObj.n)) {
-        indicesToDelete = [movingFigureIndex];
+        figureContainer.removeChild(movingFigure);
       } else {
         throw new Error("figureStartsFight: Nobody dies which is not allowed in a fight!");
       }
-      deleteCharactersAtIndices(indicesToDelete);
-      break;
+      return;
     }
-  }
-}
-
-function deleteCharactersAtIndices(indicesToDelete) {
-  indicesToDelete.sort((a, b) => b - a);
-  indicesToDelete.forEach((index) => {
-    figureContainer.removeChildAt(index);
   });
 }
 
+// TODO: Rewrite functions moveSelectedFigure & moveFigureFromTo
+// Currently moveSelectedFigure is just for the frontend and sends an event to the backend, that a figure moved
+// moveFigureFromTo is called when the backend sends an event that a figure has moved (in the future only opponent figures)
 function moveSelectedFigure(selectedFigure, fieldX, fieldY) {
   for (const move of possibleMovesRenderer.possibleMovesList) {
     if (move.x == fieldX && move.y == fieldY) {
@@ -215,7 +204,7 @@ function moveSelectedFigure(selectedFigure, fieldX, fieldY) {
       });
       selectedFigure.moveToField(move.x, move.y);
       if (fieldOccupiedByTeam(fieldX, fieldY) !== false) {
-        figureStartsFight(selectedIndex);
+        figureStartsFight(selectedFigure);
       }
       deselectAllFigures();
       return true;
@@ -229,12 +218,11 @@ function moveFigureFromTo(fromX, fromY, toX, toY) {
     if (figure.field.x == fromX && figure.field.y == fromY) {
       figure.moveToField(toX, toY);
       if (fieldOccupiedByTeam(toX, toY) !== false) {
-        figureStartsFight(i);
+        figureStartsFight(figure);
       }
       deselectAllFigures();
       return;
     }
-    throw new Error(`Could not move Figure from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
   });
 }
 
@@ -250,18 +238,15 @@ function clickedOnField(evt) {
   const fieldX = Math.floor(evt.stageX / tileSize);
   const fieldY = Math.floor(evt.stageY / tileSize);
 
-  let figureHasMoved = false;
-
   // MOVING
+  let figureHasMoved = false;
   figureContainer.children.forEach((figure) => {
-    if (figure.isSelected === true) {
-      const movePossible = moveSelectedFigure(figure, fieldX, fieldY);
-      if (movePossible) figureHasMoved = true;
-    }
+    if (figure.isSelected === true) figureHasMoved = moveSelectedFigure(figure, fieldX, fieldY);
   });
+  if (figureHasMoved) return;
 
   // SELECTING
-  if (!figureHasMoved) selectFigure(fieldX, fieldY);
+  selectFigure(fieldX, fieldY);
 }
 
 function drawGameField() {
@@ -315,6 +300,7 @@ function connectToServer() {
   socket.emit("joinGame", gameId);
   console.log(`Client: Joined Game (gameID=${gameId})`);
 
+  // DEFINING EVENTS
   socket.on("loadFigures", (figures) => loadFigures(figures));
   socket.on("moveFigure", (move) => moveFigureFromTo(move.from.x, move.from.y, move.to.x, move.to.y));
 }
