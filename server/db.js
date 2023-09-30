@@ -9,6 +9,7 @@ function pushNewMockPiecesToDB(gameId) {
     gameId: gameId,
     pieces: [
       { id: "runner", position: { x: 0, y: 0 }, team: "red" },
+      { id: "spy", position: { x: 1, y: 0 }, team: "red" },
       { id: "runner", position: { x: 0, y: 4 }, team: "yellow" },
     ],
   };
@@ -26,5 +27,5 @@ function pushMockPiecesOfGame(gameId, pieces) {
 module.exports = {
   pushNewMockPiecesToDB,
   getMockPiecesOfGame,
-  pushMockPiecesOfGame
+  pushMockPiecesOfGame,
 };

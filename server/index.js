@@ -53,7 +53,7 @@ io.on("connection", (socket) => {
     const gamePieces = db.getMockPiecesOfGame(gameId);
     const updatedGamePieces = gameLogic.movePiece(gamePieces, move);
     db.pushMockPiecesOfGame(gameId, updatedGamePieces);
-    socket.to(gameId).emit("updatePieces", updatedGamePieces);
+    io.to(gameId).emit("updatePieces", updatedGamePieces);
   });
   socket.on("disconnect", () => {
     console.log("user disconnected");

@@ -165,31 +165,6 @@ function selectPiece(fieldX, fieldY) {
   });
 }
 
-// function pieceStartsFight(movingPiece) {
-//   const opponentTeam = movingPiece.team == "yellow" ? "red" : "yellow";
-//   pieceContainer.children.forEach((opponentPiece) => {
-//     if (
-//       opponentPiece.team === opponentTeam &&
-//       opponentPiece.field.x === movingPiece.field.x &&
-//       opponentPiece.field.y === movingPiece.field.y
-//     ) {
-//       const movingPieceObj = characters.find((ch) => ch.id === movingPiece.characterID);
-//       const opponentPieceObj = characters.find((ch) => ch.id === opponentPiece.characterID);
-//       if (movingPieceObj.n === opponentPieceObj.n) {
-//         pieceContainer.removeChild(opponentPiece);
-//         pieceContainer.removeChild(movingPiece);
-//       } else if (movingPieceObj.beats.includes(opponentPieceObj.n)) {
-//         pieceContainer.removeChild(opponentPiece);
-//       } else if (opponentPieceObj.beats.includes(movingPieceObj.n)) {
-//         pieceContainer.removeChild(movingPiece);
-//       } else {
-//         throw new Error("pieceStartsFight: Nobody dies which is not allowed in a fight!");
-//       }
-//       return;
-//     }
-//   });
-// }
-
 function deselectAllPieces() {
   possibleMovesRenderer.removeAllChildren();
   pieceContainer.children.forEach((piece) => {
