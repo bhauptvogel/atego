@@ -40,7 +40,7 @@ const tileSize = 128;
 const nFieldsWidth = 4;
 const nFieldsHeight = 5;
 
-class Figure extends createjs.Container {
+class Piece extends createjs.Container {
   constructor(characterID, field, team) {
     super();
     this.characterID = characterID;
@@ -57,14 +57,10 @@ class Figure extends createjs.Container {
     this.addChild(this.bitmapImage);
   }
 
-  delete() {
-    this.removeAllChildren();
-  }
-
-  moveToField(x, y) {
-    this.x = x * tileSize + tileSize / 4;
-    this.y = y * tileSize + tileSize / 4;
-    this.field = { x: x, y: y };
+  moveToField(fieldX, fieldY) {
+    this.x = fieldX * tileSize + tileSize / 4;
+    this.y = fieldY * tileSize + tileSize / 4;
+    this.field = { x: fieldX, y: fieldY };
   }
 
   getPossibleMoves() {
@@ -137,7 +133,9 @@ class possibleMovesContainer extends createjs.Container {
       const radius = 10;
       const x = possibleMovesList[i].x * tileSize + tileSize / 2;
       const y = possibleMovesList[i].y * tileSize + tileSize / 2;
-      const color = fieldOccupiedByTeam(possibleMovesList[i].x, possibleMovesList[i].y) ? "orange" : "green";
+      const color = fieldOccupiedByTeam(possibleMovesList[i].x, possibleMovesList[i].y)
+        ? "orange"
+        : "green";
       circle.graphics.beginFill(color).drawCircle(x, y, radius);
       this.addChild(circle);
     }
@@ -146,90 +144,56 @@ class possibleMovesContainer extends createjs.Container {
 
 function fieldOccupiedByTeam(fieldX, fieldY) {
   let output = false;
-  figureContainer.children.forEach((figure) => {
-    if (figure.field.x == fieldX && figure.field.y == fieldY) {
-      output = figure.team;
+  pieceContainer.children.forEach((piece) => {
+    if (piece.field.x == fieldX && piece.field.y == fieldY) {
+      output = piece.team;
       return;
     }
   });
   return output;
 }
 
-function selectFigure(fieldX, fieldY) {
-  deselectAllFigures();
+function selectPiece(fieldX, fieldY) {
+  deselectAllPieces();
 
-  figureContainer.children.forEach((figure) => {
-    if (figure.field.x == fieldX && figure.field.y == fieldY) {
-      figure.isSelected = true;
-      possibleMovesRenderer.render(figure.getPossibleMoves());
+  pieceContainer.children.forEach((piece) => {
+    if (piece.field.x == fieldX && piece.field.y == fieldY) {
+      piece.isSelected = true;
+      possibleMovesRenderer.render(piece.getPossibleMoves());
       stage.update(); // maybe remove
     }
   });
 }
 
-function figureStartsFight(movingFigure) {
-  const opponentTeam = movingFigure.team == "yellow" ? "red" : "yellow";
-  figureContainer.children.forEach((opponentFigure) => {
-    if (
-      opponentFigure.team === opponentTeam &&
-      opponentFigure.field.x === movingFigure.field.x &&
-      opponentFigure.field.y === movingFigure.field.y
-    ) {
-      const movingFigureObj = characters.find((ch) => ch.id === movingFigure.characterID);
-      const opponentFigureObj = characters.find((ch) => ch.id === opponentFigure.characterID);
-      if (movingFigureObj.n === opponentFigureObj.n) {
-        figureContainer.removeChild(opponentFigure);
-        figureContainer.removeChild(movingFigure);
-      } else if (movingFigureObj.beats.includes(opponentFigureObj.n)) {
-        figureContainer.removeChild(opponentFigure);
-      } else if (opponentFigureObj.beats.includes(movingFigureObj.n)) {
-        figureContainer.removeChild(movingFigure);
-      } else {
-        throw new Error("figureStartsFight: Nobody dies which is not allowed in a fight!");
-      }
-      return;
-    }
-  });
-}
+// function pieceStartsFight(movingPiece) {
+//   const opponentTeam = movingPiece.team == "yellow" ? "red" : "yellow";
+//   pieceContainer.children.forEach((opponentPiece) => {
+//     if (
+//       opponentPiece.team === opponentTeam &&
+//       opponentPiece.field.x === movingPiece.field.x &&
+//       opponentPiece.field.y === movingPiece.field.y
+//     ) {
+//       const movingPieceObj = characters.find((ch) => ch.id === movingPiece.characterID);
+//       const opponentPieceObj = characters.find((ch) => ch.id === opponentPiece.characterID);
+//       if (movingPieceObj.n === opponentPieceObj.n) {
+//         pieceContainer.removeChild(opponentPiece);
+//         pieceContainer.removeChild(movingPiece);
+//       } else if (movingPieceObj.beats.includes(opponentPieceObj.n)) {
+//         pieceContainer.removeChild(opponentPiece);
+//       } else if (opponentPieceObj.beats.includes(movingPieceObj.n)) {
+//         pieceContainer.removeChild(movingPiece);
+//       } else {
+//         throw new Error("pieceStartsFight: Nobody dies which is not allowed in a fight!");
+//       }
+//       return;
+//     }
+//   });
+// }
 
-// TODO: Rewrite functions moveSelectedFigure & moveFigureFromTo
-// Currently moveSelectedFigure is just for the frontend and sends an event to the backend, that a figure moved
-// moveFigureFromTo is called when the backend sends an event that a figure has moved (in the future only opponent figures)
-function moveSelectedFigure(selectedFigure, fieldX, fieldY) {
-  for (const move of possibleMovesRenderer.possibleMovesList) {
-    if (move.x == fieldX && move.y == fieldY) {
-      socket.emit("figureMoved", {
-        from: { x: selectedFigure.field.x, y: selectedFigure.field.y },
-        to: { x: fieldX, y: fieldY },
-      });
-      selectedFigure.moveToField(move.x, move.y);
-      if (fieldOccupiedByTeam(fieldX, fieldY) !== false) {
-        figureStartsFight(selectedFigure);
-      }
-      deselectAllFigures();
-      return true;
-    }
-  }
-  return false;
-}
-
-function moveFigureFromTo(fromX, fromY, toX, toY) {
-  figureContainer.children.forEach((figure) => {
-    if (figure.field.x == fromX && figure.field.y == fromY) {
-      figure.moveToField(toX, toY);
-      if (fieldOccupiedByTeam(toX, toY) !== false) {
-        figureStartsFight(figure);
-      }
-      deselectAllFigures();
-      return;
-    }
-  });
-}
-
-function deselectAllFigures() {
+function deselectAllPieces() {
   possibleMovesRenderer.removeAllChildren();
-  figureContainer.children.forEach((figure) => {
-    figure.isSelected = false;
+  pieceContainer.children.forEach((piece) => {
+    piece.isSelected = false;
   });
   stage.update();
 }
@@ -239,14 +203,27 @@ function clickedOnField(evt) {
   const fieldY = Math.floor(evt.stageY / tileSize);
 
   // MOVING
-  let figureHasMoved = false;
-  figureContainer.children.forEach((figure) => {
-    if (figure.isSelected === true) figureHasMoved = moveSelectedFigure(figure, fieldX, fieldY);
+  let pieceMoved = false;
+  pieceContainer.children.forEach((piece) => {
+    if (piece.isSelected === true) {
+      if (
+        possibleMovesRenderer.possibleMovesList.find(
+          (element) => element.x == fieldX && element.y == fieldY
+        ) !== undefined
+      ) {
+        socket.emit("pieceMoved", {
+          from: { x: piece.field.x, y: piece.field.y },
+          to: { x: fieldX, y: fieldY },
+        });
+        piece.moveToField(fieldX, fieldY);
+        deselectAllPieces();
+        pieceMoved = true;
+      }
+    }
   });
-  if (figureHasMoved) return;
 
   // SELECTING
-  selectFigure(fieldX, fieldY);
+  if (!pieceMoved) selectPiece(fieldX, fieldY);
 }
 
 function drawGameField() {
@@ -273,7 +250,7 @@ function drawGameField() {
 function init() {
   stage = new createjs.Stage("gameCanvas");
   loader = new createjs.LoadQueue(false);
-  figureContainer = new createjs.Container();
+  pieceContainer = new createjs.Container();
   possibleMovesRenderer = new possibleMovesContainer();
 
   loader.addEventListener("complete", renderGame);
@@ -289,7 +266,7 @@ function init() {
   );
 
   connectToServer();
-  stage.addChild(figureContainer);
+  stage.addChild(pieceContainer);
 }
 
 function connectToServer() {
@@ -301,14 +278,13 @@ function connectToServer() {
   console.log(`Client: Joined Game (gameID=${gameId})`);
 
   // DEFINING EVENTS
-  socket.on("loadFigures", (figures) => loadFigures(figures));
-  socket.on("moveFigure", (move) => moveFigureFromTo(move.from.x, move.from.y, move.to.x, move.to.y));
+  socket.on("updatePieces", (pieces) => updatePieces(pieces));
 }
 
 function renderGame() {
   drawGameField();
 
-  figureContainer.children.forEach((figure) => figure.loadImage());
+  pieceContainer.children.forEach((piece) => piece.loadImage());
 
   stage.addChild(possibleMovesRenderer);
 
@@ -317,10 +293,11 @@ function renderGame() {
   stage.update();
 }
 
-function loadFigures(figures) {
-  figureContainer.removeAllChildren();
-  for (const figure of figures) {
-    figureContainer.addChild(new Figure(figure.id, figure.position, figure.team));
-  }
+function updatePieces(pieces) {
+  pieceContainer.removeAllChildren();
+  possibleMovesRenderer.removeAllChildren();
+  pieces.forEach((piece) =>
+    pieceContainer.addChild(new Piece(piece.id, piece.position, piece.team))
+  );
   stage.update();
 }

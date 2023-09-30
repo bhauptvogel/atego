@@ -8,6 +8,7 @@ const io = socketIO(server);
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const db = require("./db");
+const gameLogic = require("./gameLogic");
 
 app.get("/", (req, res) => {
   res.redirect("/game/new");
@@ -34,7 +35,7 @@ io.on("connection", (socket) => {
     if (!room) {
       socket.join(gameId);
       joinGame(socket.id, gameId);
-      db.pushMockFiguresToDB(gameId);
+      db.pushNewMockPiecesToDB(gameId);
     } else if (room.size == 1) {
       socket.join(gameId);
       joinGame(socket.id, gameId);
@@ -45,13 +46,14 @@ io.on("connection", (socket) => {
     } else {
       throw new Error("Server: The room does exist but has size == 0");
     }
-    io.to(gameId).emit("loadFigures", db.getMockFiguresOfGame(gameId));
+    io.to(gameId).emit("updatePieces", db.getMockPiecesOfGame(gameId));
   });
-  socket.on("figureMoved", (move) => {
+  socket.on("pieceMoved", (move) => {
     const gameId = findPlayerGame(socket.id);
-    console.log("figureMoved " + JSON.stringify(move));
-    db.moveMockFigure(gameId, move);
-    socket.to(gameId).emit("moveFigure", move);
+    const gamePieces = db.getMockPiecesOfGame(gameId);
+    const updatedGamePieces = gameLogic.movePiece(gamePieces, move);
+    db.pushMockPiecesOfGame(gameId, updatedGamePieces);
+    socket.to(gameId).emit("updatePieces", updatedGamePieces);
   });
   socket.on("disconnect", () => {
     console.log("user disconnected");
