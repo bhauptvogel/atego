@@ -1,6 +1,11 @@
 const allFigures = [];
 
 function pushMockFiguresToDB(gameId) {
+  if (allFigures.find((element) => element.gameId === gameId) !== undefined) {
+    
+      console.log(`Mock figures already exist for game ${gameId}.`);
+    return;
+  }
   const mockFigures = {
     gameId: gameId,
     figures: [
@@ -13,19 +18,31 @@ function pushMockFiguresToDB(gameId) {
 }
 
 function getMockFiguresOfGame(gameId) {
-  for (const gameFigures of allFigures) {
-    if (gameId === gameFigures.gameId) {
-      console.log(
-        `Mock figures successfully retrieved for game ${gameId}: ${JSON.stringify(gameFigures.figures)}`
-      );
-      return gameFigures.figures;
+  if (allFigures.length === 0) return [];
+  const figures = allFigures.find((element) => element.gameId === gameId).figures;
+  if (figures === undefined) {
+    console.error(`No mock figures available for game ${gameId}!`);
+  } else {
+    console.log(`Mock figures successfully retrieved for game ${gameId}: ${JSON.stringify(figures)}`);
+  }
+  return figures;
+}
+
+function moveMockFigure(gameId, move) {
+  const figures = allFigures.find((element) => element.gameId == gameId).figures;
+
+  for (const figure of figures) {
+    if (figure.position.x == move.from.x && figure.position.y == move.from.y) {
+      // TODO: Move Validation
+      figure.position = move.to;
+      return;
     }
   }
-  console.error(`No mock figures available for game ${gameId}!`);
-  return [];
+  throw new Error("No figure was moved!");
 }
 
 module.exports = {
   pushMockFiguresToDB,
   getMockFiguresOfGame,
+  moveMockFigure,
 };

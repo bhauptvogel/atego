@@ -39,20 +39,18 @@ io.on("connection", (socket) => {
       socket.join(gameId);
       joinGame(socket.id, gameId);
       io.to(gameId).emit("startGame");
-
-      // testing
-      io.to(gameId).emit("loadFigures", db.getMockFiguresOfGame(gameId));
     } else if (room.size >= 2) {
       socket.emit("err", "Room full");
       console.error("Server: The room is full!");
     } else {
       throw new Error("Server: The room does exist but has size == 0");
     }
+    io.to(gameId).emit("loadFigures", db.getMockFiguresOfGame(gameId));
   });
   socket.on("figureMoved", (move) => {
     const gameId = findPlayerGame(socket.id);
     console.log("figureMoved " + JSON.stringify(move));
-    // TODO: save in database
+    db.moveMockFigure(gameId, move);
     socket.to(gameId).emit("moveFigure", move);
   });
   socket.on("disconnect", () => {
