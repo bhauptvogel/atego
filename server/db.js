@@ -27,16 +27,19 @@ function pushMockPiecesOfGame(gameId, pieces) {
 }
 
 function assignTeamToPlayer(gameId, userId) {
-  const game = allGames.find((element) => element.gameId === gameId);
-  if (game.playerIdYellow === undefined) {
-    allGames.find((element) => element.gameId === gameId).playerIdYellow = userId;
-    return "yellow";
-  } else if (game.playerIdRed === undefined) {
-    allGames.find((element) => element.gameId === gameId).playerIdRed = userId;
-    return "red";
-  } else {
-    return ""; // both teams are already assigned!
-  }
+    const game = allGames.find((element) => element.gameId === gameId);
+    if (game.playerIdYellow === undefined) {
+        allGames.find((element) => element.gameId === gameId).playerIdYellow = userId;
+        console.log(`Player ${userId} was assigned team yellow.`);
+        return "yellow";
+    } else if (game.playerIdRed === undefined) {
+        allGames.find((element) => element.gameId === gameId).playerIdRed = userId;
+        console.log(`Player ${userId} was assigned team red.`);
+        return "red";
+    } else {
+        console.log(`Both teams are already assigned for game ${gameId}.`);
+        return ""; // both teams are already assigned!
+    }
 }
 
 module.exports = {

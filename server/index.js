@@ -29,17 +29,13 @@ app.get("/game/:gameId", (req, res) => {
 
 io.on("connection", (socket) => {
   socket.on("joinGame", (gameId) => {
-    console.log("a user joined a room");
     let room = io.sockets.adapter.rooms.get(gameId);
 
-    if (!room) {
-      db.pushNewMockPiecesToDB(gameId);
-      socket.emit("assignTeam", db.assignTeamToPlayer(gameId, socket.id));
-    } else if (room.size < 2) socket.emit("assignTeam", db.assignTeamToPlayer(gameId, socket.id));
-    else console.error("Server: The room is full!");
+    if (!room) db.pushNewMockPiecesToDB(gameId);
+    else if (room.size >= 2) console.error(`The room is already full!`);
 
     socket.join(gameId);
-    joinGame(socket.id, gameId);
+    joinGame(socket, gameId);
     io.to(gameId).emit("updatePieces", db.getMockPiecesOfGame(gameId));
   });
   socket.on("pieceMoved", (move) => {
@@ -49,15 +45,17 @@ io.on("connection", (socket) => {
     io.to(gameId).emit("updatePieces", updatedGamePieces);
   });
   socket.on("disconnect", () => {
-    console.log("user disconnected");
+    console.log(`User (${socket.id}) disconnected from game (${findPlayerGame(socket.id)})`);
+    // maybe free the team spot in the database
   });
 });
 
 let playersInGames = {};
 
-function joinGame(socketId, gameId) {
-  playersInGames[socketId] = gameId;
-  console.log(`User (${socketId}) joined game (${gameId})`);
+function joinGame(socket, gameId) {
+  playersInGames[socket.id] = gameId;
+  console.log(`User (${socket.id}) joined game (${gameId})`);
+  socket.emit("assignTeam", db.assignTeamToPlayer(gameId, socket.id));
 }
 
 function findPlayerGame(socketId) {

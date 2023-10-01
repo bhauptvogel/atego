@@ -136,8 +136,7 @@ function deselectAllPieces() {
 }
 
 function clickedOnField(evt) {
-  console.log(team);
-  if (team === undefined) return;
+  if (!team) return;
 
   const fieldX = Math.floor(evt.stageX / tileSize);
   const fieldY = Math.floor(evt.stageY / tileSize);
