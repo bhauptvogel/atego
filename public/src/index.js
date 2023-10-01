@@ -10,7 +10,8 @@ class Piece extends createjs.Container {
     this.isSelected = false;
 
     this.team = pieceTeam;
-    if (this.team === team) this.bitmapImage = new createjs.Bitmap(loader.getResult(`${this.characterID}-${this.team}`));
+    if (this.team === team)
+      this.bitmapImage = new createjs.Bitmap(loader.getResult(`${this.characterID}-${this.team}`));
     else this.bitmapImage = new createjs.Bitmap(loader.getResult(`unknown-${this.team}`));
 
     this.addChild(this.bitmapImage);
@@ -31,7 +32,7 @@ class Piece extends createjs.Container {
       const isFieldOccupied = fieldOccupiedByTeam(i, this.field.y);
       if (i > this.field.x + maxMoves) {
         break;
-      } else if (isFieldOccupied !== false) {
+      } else if (isFieldOccupied !== undefined) {
         if (isFieldOccupied !== this.team) possibleMoves.push({ x: i, y: this.field.y });
         break;
       } else {
@@ -43,7 +44,7 @@ class Piece extends createjs.Container {
       const isFieldOccupied = fieldOccupiedByTeam(i, this.field.y);
       if (i < this.field.x - maxMoves) {
         break;
-      } else if (isFieldOccupied !== false) {
+      } else if (isFieldOccupied !== undefined) {
         if (isFieldOccupied !== this.team) possibleMoves.push({ x: i, y: this.field.y });
         break;
       } else {
@@ -55,7 +56,7 @@ class Piece extends createjs.Container {
       const isFieldOccupied = fieldOccupiedByTeam(this.field.x, i);
       if (i > this.field.y + maxMoves) {
         break;
-      } else if (isFieldOccupied !== false) {
+      } else if (isFieldOccupied !== undefined) {
         if (isFieldOccupied !== this.team) possibleMoves.push({ x: this.field.x, y: i });
         break;
       } else {
@@ -67,7 +68,7 @@ class Piece extends createjs.Container {
       const isFieldOccupied = fieldOccupiedByTeam(this.field.x, i);
       if (i < this.field.y - maxMoves) {
         break;
-      } else if (isFieldOccupied !== false) {
+      } else if (isFieldOccupied !== undefined) {
         if (isFieldOccupied !== this.team) possibleMoves.push({ x: this.field.x, y: i });
         break;
       } else {
@@ -102,33 +103,27 @@ class possibleMovesContainer extends createjs.Container {
 }
 
 function fieldOccupiedByTeam(fieldX, fieldY) {
-  let output = false;
-  pieceContainer.children.forEach((piece) => {
-    if (piece.field.x == fieldX && piece.field.y == fieldY) {
-      output = piece.team;
-      return;
-    }
-  });
-  return output;
+  for (const piece of pieceContainer.children) {
+    if (piece.field.x == fieldX && piece.field.y == fieldY) return piece.team;
+  }
+  return undefined;
 }
 
 function selectPiece(fieldX, fieldY) {
   deselectAllPieces();
 
-  pieceContainer.children.forEach((piece) => {
+  for (const piece of pieceContainer.children) {
     if (piece.field.x == fieldX && piece.field.y == fieldY && team == piece.team) {
       piece.isSelected = true;
       possibleMovesRenderer.render(piece.getPossibleMoves());
-      stage.update(); // maybe remove
+      stage.update();
     }
-  });
+  }
 }
 
 function deselectAllPieces() {
   possibleMovesRenderer.removeAllChildren();
-  pieceContainer.children.forEach((piece) => {
-    piece.isSelected = false;
-  });
+  pieceContainer.children.forEach((piece) => (piece.isSelected = false));
   stage.update();
 }
 
@@ -139,8 +134,7 @@ function clickedOnField(evt) {
   const fieldY = Math.floor(evt.stageY / tileSize);
 
   // MOVING
-  let pieceMoved = false;
-  pieceContainer.children.forEach((piece) => {
+  for (const piece of pieceContainer.children) {
     if (piece.isSelected === true) {
       if (
         possibleMovesRenderer.possibleMovesList.find(
@@ -153,13 +147,13 @@ function clickedOnField(evt) {
         });
         piece.moveToField(fieldX, fieldY);
         deselectAllPieces();
-        pieceMoved = true;
+        return;
       }
     }
-  });
+  }
 
   // SELECTING
-  if (!pieceMoved) selectPiece(fieldX, fieldY);
+  selectPiece(fieldX, fieldY);
 }
 
 function drawGameField() {
