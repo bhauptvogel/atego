@@ -1,41 +1,3 @@
-const characters = [
-  {
-    n: 0,
-    id: "bomb",
-    beats: [1, 2, 4, 5, 6],
-  },
-  {
-    n: 1,
-    id: "spy",
-    beats: [6],
-  },
-  {
-    n: 2,
-    id: "runner",
-    beats: [1],
-  },
-  {
-    n: 3,
-    id: "miner",
-    beats: [0, 1, 2],
-  },
-  {
-    n: 4,
-    id: "assassin",
-    beats: [1, 2, 3],
-  },
-  {
-    n: 5,
-    id: "killer",
-    beats: [1, 2, 3, 4],
-  },
-  {
-    n: 6,
-    id: "mr_x",
-    beats: [2, 3, 4, 5],
-  },
-];
-
 const tileSize = 128;
 const nFieldsWidth = 4;
 const nFieldsHeight = 5;
@@ -228,14 +190,15 @@ function init() {
   pieceContainer = new createjs.Container();
   possibleMovesRenderer = new possibleMovesContainer();
 
+  const manifest = ["bomb", "spy", "runner", "miner", "assassin", "killer", "mr_x"]
+    .map((char) => [
+      { id: char + "_yellow", src: `${char}-goldenrod.png` },
+      { id: char + "_red", src: `${char}-darkred.png` },
+    ])
+    .flat();
   loader.addEventListener("complete", renderGame);
   loader.loadManifest(
-    characters
-      .map((char) => [
-        { id: char.id + "_yellow", src: `${char.id}-goldenrod.png` },
-        { id: char.id + "_red", src: `${char.id}-darkred.png` },
-      ])
-      .flat(),
+    manifest,
     true,
     "/assets/"
   );
@@ -258,13 +221,9 @@ function connectToServer() {
 
 function renderGame() {
   drawGameField();
-
   pieceContainer.children.forEach((piece) => piece.loadImage());
-
   stage.addChild(possibleMovesRenderer);
-
   stage.on("stagemousedown", (evt) => clickedOnField(evt));
-
   stage.update();
 }
 
