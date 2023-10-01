@@ -3,19 +3,16 @@ const nFieldsWidth = 4;
 const nFieldsHeight = 5;
 
 class Piece extends createjs.Container {
-  constructor(characterID, field, team) {
+  constructor(characterID, field, pieceTeam) {
     super();
     this.characterID = characterID;
     this.moveToField(field.x, field.y);
     this.isSelected = false;
 
-    this.team = team;
-    this.loadImage();
-  }
+    this.team = pieceTeam;
+    if (this.team === team) this.bitmapImage = new createjs.Bitmap(loader.getResult(`${this.characterID}-${this.team}`));
+    else this.bitmapImage = new createjs.Bitmap(loader.getResult(`unknown-${this.team}`));
 
-  loadImage() {
-    this.removeChild(this.bitmapImage);
-    this.bitmapImage = new createjs.Bitmap(loader.getResult(`${this.characterID}_${this.team}`));
     this.addChild(this.bitmapImage);
   }
 
@@ -193,17 +190,14 @@ function init() {
   possibleMovesRenderer = new possibleMovesContainer();
   team = undefined;
 
-  const manifest = ["bomb", "spy", "runner", "miner", "assassin", "killer", "mr_x"]
+  const manifest = ["bomb", "spy", "runner", "miner", "assassin", "killer", "mr_x", "unknown"]
     .map((char) => [
-      { id: char + "_yellow", src: `${char}-yellow.png` },
-      { id: char + "_red", src: `${char}-red.png` },
+      { id: char + "-yellow", src: `${char}-yellow.png` },
+      { id: char + "-red", src: `${char}-red.png` },
     ])
     .flat();
   loader.addEventListener("complete", renderGame);
   loader.loadManifest(manifest, true, "/assets/");
-
-  connectToServer();
-  stage.addChild(pieceContainer);
 }
 
 function connectToServer() {
@@ -221,10 +215,11 @@ function connectToServer() {
 
 function renderGame() {
   drawGameField();
-  pieceContainer.children.forEach((piece) => piece.loadImage());
+  stage.addChild(pieceContainer);
   stage.addChild(possibleMovesRenderer);
   stage.on("stagemousedown", (evt) => clickedOnField(evt));
   stage.update();
+  connectToServer();
 }
 
 function updatePieces(pieces) {
