@@ -33,25 +33,18 @@ io.on("connection", (socket) => {
     let room = io.sockets.adapter.rooms.get(gameId);
 
     if (!room) {
-      socket.join(gameId);
-      joinGame(socket.id, gameId);
       db.pushNewMockPiecesToDB(gameId);
-    } else if (room.size == 1) {
-      socket.join(gameId);
-      joinGame(socket.id, gameId);
-      io.to(gameId).emit("startGame");
-    } else if (room.size >= 2) {
-      socket.emit("err", "Room full");
-      console.error("Server: The room is full!");
-    } else {
-      throw new Error("Server: The room does exist but has size == 0");
-    }
+      socket.emit("assignTeam", db.assignTeamToPlayer(gameId, socket.id));
+    } else if (room.size < 2) socket.emit("assignTeam", db.assignTeamToPlayer(gameId, socket.id));
+    else console.error("Server: The room is full!");
+
+    socket.join(gameId);
+    joinGame(socket.id, gameId);
     io.to(gameId).emit("updatePieces", db.getMockPiecesOfGame(gameId));
   });
   socket.on("pieceMoved", (move) => {
     const gameId = findPlayerGame(socket.id);
-    const gamePieces = db.getMockPiecesOfGame(gameId);
-    const updatedGamePieces = gameLogic.movePiece(gamePieces, move);
+    const updatedGamePieces = gameLogic.movePiece(db.getMockPiecesOfGame(gameId), move);
     db.pushMockPiecesOfGame(gameId, updatedGamePieces);
     io.to(gameId).emit("updatePieces", updatedGamePieces);
   });

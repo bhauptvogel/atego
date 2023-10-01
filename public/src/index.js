@@ -119,7 +119,7 @@ function selectPiece(fieldX, fieldY) {
   deselectAllPieces();
 
   pieceContainer.children.forEach((piece) => {
-    if (piece.field.x == fieldX && piece.field.y == fieldY) {
+    if (piece.field.x == fieldX && piece.field.y == fieldY && team == piece.team) {
       piece.isSelected = true;
       possibleMovesRenderer.render(piece.getPossibleMoves());
       stage.update(); // maybe remove
@@ -136,6 +136,9 @@ function deselectAllPieces() {
 }
 
 function clickedOnField(evt) {
+  console.log(team);
+  if (team === undefined) return;
+
   const fieldX = Math.floor(evt.stageX / tileSize);
   const fieldY = Math.floor(evt.stageY / tileSize);
 
@@ -189,19 +192,16 @@ function init() {
   loader = new createjs.LoadQueue(false);
   pieceContainer = new createjs.Container();
   possibleMovesRenderer = new possibleMovesContainer();
+  team = undefined;
 
   const manifest = ["bomb", "spy", "runner", "miner", "assassin", "killer", "mr_x"]
     .map((char) => [
-      { id: char + "_yellow", src: `${char}-goldenrod.png` },
-      { id: char + "_red", src: `${char}-darkred.png` },
+      { id: char + "_yellow", src: `${char}-yellow.png` },
+      { id: char + "_red", src: `${char}-red.png` },
     ])
     .flat();
   loader.addEventListener("complete", renderGame);
-  loader.loadManifest(
-    manifest,
-    true,
-    "/assets/"
-  );
+  loader.loadManifest(manifest, true, "/assets/");
 
   connectToServer();
   stage.addChild(pieceContainer);
@@ -217,6 +217,7 @@ function connectToServer() {
 
   // DEFINING EVENTS
   socket.on("updatePieces", (pieces) => updatePieces(pieces));
+  socket.on("assignTeam", (assignedTeam) => (team = assignedTeam));
 }
 
 function renderGame() {
