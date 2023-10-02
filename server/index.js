@@ -37,12 +37,15 @@ io.on("connection", (socket) => {
     socket.join(gameId);
     joinGame(socket, gameId);
     io.to(gameId).emit("updatePieces", db.getMockPiecesOfGame(gameId));
+    io.to(gameId).emit("updatePlayerTurn", db.getPlayerTurn(gameId));
   });
   socket.on("pieceMoved", (move) => {
     const gameId = findPlayerGame(socket.id);
     const updatedGamePieces = gameLogic.movePiece(db.getMockPiecesOfGame(gameId), move);
     db.pushMockPiecesOfGame(gameId, updatedGamePieces);
     io.to(gameId).emit("updatePieces", updatedGamePieces);
+    db.switchPlayerTurn(gameId);
+    io.to(gameId).emit("updatePlayerTurn", db.getPlayerTurn(gameId));
   });
   socket.on("disconnect", () => {
     console.log(`User (${socket.id}) disconnected from game (${findPlayerGame(socket.id)})`);

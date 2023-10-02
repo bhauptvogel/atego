@@ -10,7 +10,7 @@ class Piece extends createjs.Container {
     this.isSelected = false;
 
     this.team = pieceTeam;
-    if (this.team === team)
+    if (this.team === clientTeam)
       this.bitmapImage = new createjs.Bitmap(loader.getResult(`${this.characterID}-${this.team}`));
     else this.bitmapImage = new createjs.Bitmap(loader.getResult(`unknown-${this.team}`));
 
@@ -113,7 +113,7 @@ function selectPiece(fieldX, fieldY) {
   deselectAllPieces();
 
   for (const piece of pieceContainer.children) {
-    if (piece.field.x == fieldX && piece.field.y == fieldY && team == piece.team) {
+    if (piece.field.x == fieldX && piece.field.y == fieldY && clientTeam == piece.team) {
       piece.isSelected = true;
       possibleMovesRenderer.render(piece.getPossibleMoves());
       stage.update();
@@ -128,7 +128,7 @@ function deselectAllPieces() {
 }
 
 function clickedOnField(evt) {
-  if (!team) return;
+  if (!clientTeam) return;
 
   const fieldX = Math.floor(evt.stageX / tileSize);
   const fieldY = Math.floor(evt.stageY / tileSize);
@@ -153,26 +153,26 @@ function clickedOnField(evt) {
   }
 
   // SELECTING
-  selectPiece(fieldX, fieldY);
+  if (currentTurn === clientTeam) selectPiece(fieldX, fieldY);
 }
 
 function drawGameField() {
-  line = new createjs.Shape();
+  const board = new createjs.Shape();
   for (let x = 1; x < nFieldsWidth; x++) {
-    line.graphics
+    board.graphics
       .setStrokeStyle(1)
       .beginStroke("#000000")
       .moveTo(tileSize * x, 0)
       .lineTo(tileSize * x, nFieldsHeight * tileSize);
   }
   for (let y = 1; y < nFieldsHeight; y++) {
-    line.graphics
+    board.graphics
       .setStrokeStyle(1)
       .beginStroke("#000000")
       .moveTo(0, tileSize * y)
       .lineTo(nFieldsHeight * tileSize, tileSize * y);
   }
-  stage.addChild(line);
+  stage.addChild(board);
   stage.update();
 }
 
@@ -182,7 +182,8 @@ function init() {
   loader = new createjs.LoadQueue(false);
   pieceContainer = new createjs.Container();
   possibleMovesRenderer = new possibleMovesContainer();
-  team = undefined;
+  clientTeam = undefined;
+  currentTurn = undefined;
 
   const manifest = ["bomb", "spy", "runner", "miner", "assassin", "killer", "mr_x", "unknown"]
     .map((char) => [
@@ -204,7 +205,8 @@ function connectToServer() {
 
   // DEFINING EVENTS
   socket.on("updatePieces", (pieces) => updatePieces(pieces));
-  socket.on("assignTeam", (assignedTeam) => (team = assignedTeam));
+  socket.on("updatePlayerTurn", (updatedTurn) => (currentTurn = updatedTurn));
+  socket.on("assignTeam", (assignedTeam) => (clientTeam = assignedTeam));
 }
 
 function renderGame() {

@@ -9,6 +9,7 @@ function pushNewMockPiecesToDB(gameId) {
     gameId: gameId,
     playerIdYellow: undefined,
     playerIdRed: undefined,
+    turn: 'yellow',
     pieces: [
       { id: "runner", position: { x: 0, y: 0 }, team: "red" },
       { id: "spy", position: { x: 1, y: 0 }, team: "red" },
@@ -26,17 +27,26 @@ function pushMockPiecesOfGame(gameId, pieces) {
   allGames.find((element) => element.gameId === gameId).pieces = pieces;
 }
 
+function switchPlayerTurn(gameId) {
+  const oldTurn = allGames.find((element) => element.gameId === gameId).turn;
+  allGames.find((element) => element.gameId === gameId).turn = oldTurn === "yellow" ? "red" : "yellow";
+}
+
+function getPlayerTurn(gameId) {
+    return allGames.find((element) => element.gameId === gameId).turn;
+}
+
 function assignTeamToPlayer(gameId, userId) {
-    const game = allGames.find((element) => element.gameId === gameId);
-    if (game.playerIdYellow === undefined) {
-        allGames.find((element) => element.gameId === gameId).playerIdYellow = userId;
-        return "yellow";
-    } else if (game.playerIdRed === undefined) {
-        allGames.find((element) => element.gameId === gameId).playerIdRed = userId;
-        return "red";
-    } else {
-        return ""; // both teams are already assigned!
-    }
+  const game = allGames.find((element) => element.gameId === gameId);
+  if (game.playerIdYellow === undefined) {
+    allGames.find((element) => element.gameId === gameId).playerIdYellow = userId;
+    return "yellow";
+  } else if (game.playerIdRed === undefined) {
+    allGames.find((element) => element.gameId === gameId).playerIdRed = userId;
+    return "red";
+  } else {
+    return ""; // both teams are already assigned!
+  }
 }
 
 module.exports = {
@@ -44,4 +54,6 @@ module.exports = {
   getMockPiecesOfGame,
   assignTeamToPlayer,
   pushMockPiecesOfGame,
+  getPlayerTurn,
+  switchPlayerTurn,
 };
