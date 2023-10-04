@@ -182,16 +182,17 @@ function clickedOnField(evt) {
 }
 
 function selectUnplacedPiece(evt) {
-  for (const unplacedPiece of clientCharacterSpace.children) {
-    if (
-      evt.stageX > unplacedPiece.x - 8 &&
-      evt.stageY > unplacedPiece.y - 8 &&
-      evt.stageX < unplacedPiece.x + 64 + 8 &&
-      evt.stageY < unplacedPiece.y + 64 + 8
-    ) {
-      clientCharacterSpace.selectedPiece = unplacedPiece;
+  if (!gameStarted)
+    for (const unplacedPiece of clientCharacterSpace.children) {
+      if (
+        evt.stageX > unplacedPiece.x - 8 &&
+        evt.stageY > unplacedPiece.y - 8 &&
+        evt.stageX < unplacedPiece.x + 64 + 8 &&
+        evt.stageY < unplacedPiece.y + 64 + 8
+      ) {
+        clientCharacterSpace.selectedPiece = unplacedPiece;
+      }
     }
-  }
 }
 
 function drawGameField() {
@@ -248,6 +249,7 @@ function connectToServer() {
   socket.on("updatePieces", (pieces) => updatePieces(pieces));
   socket.on("updatePlayerTurn", (updatedTurn) => (currentTurn = updatedTurn));
   socket.on("assignTeam", (assignedTeam) => (clientTeam = assignedTeam));
+  socket.on("startGame", () => (gameStarted = true));
 }
 
 function renderGame() {
@@ -263,6 +265,7 @@ function renderGame() {
 function updatePieces(pieces) {
   pieceContainer.removeAllChildren();
   possibleMovesRenderer.removeAllChildren();
+  console.log(pieces);
   const addPiecesToCharacterSpace = clientCharacterSpace.children.length === 0;
   pieces.forEach((piece) => {
     if (Object.keys(piece.position).length !== 0)

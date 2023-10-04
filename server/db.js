@@ -5,35 +5,27 @@ function pushNewMockPiecesToDB(gameId) {
     console.error(`Mock pieces already exist for game ${gameId}.`);
     return;
   }
-  const mockStartingGames = {
+  const mockGameInformation = {
     gameId: gameId,
     playerIdYellow: undefined,
     playerIdRed: undefined,
+    nPlayersReady: 0,
     turn: "yellow",
     pieces: [],
   };
-  allGames.push(mockStartingGames);
+  allGames.push(mockGameInformation);
 }
 
-function getStartingPieces() {
-  return [
-    { id: "bomb", position: {}, team: "red" },
-    { id: "bomb", position: {}, team: "yellow" },
-    { id: "spy", position: {}, team: "red" },
-    { id: "spy", position: {}, team: "yellow" },
-    { id: "runner", position: {}, team: "red" },
-    { id: "runner", position: {}, team: "yellow" },
-    { id: "runner", position: {}, team: "red" },
-    { id: "runner", position: {}, team: "yellow" },
-    { id: "miner", position: {}, team: "red" },
-    { id: "miner", position: {}, team: "yellow" },
-    { id: "assassin", position: {}, team: "red" },
-    { id: "assassin", position: {}, team: "yellow" },
-    { id: "killer", position: {}, team: "red" },
-    { id: "killer", position: {}, team: "yellow" },
-    { id: "mr_x", position: {}, team: "red" },
-    { id: "mr_x", position: {}, team: "yellow" },
-  ];
+function getStartingPieces(gameId) {
+  const piecesInGame = allGames.find((element) => element.gameId === gameId).pieces;
+  const pieceOrder = ["bomb", "spy", "runner", "runner", "miner", "assassin", "killer", "mr_x"];
+  const yellowPieces = pieceOrder.map((piece) => ({ id: piece, position: {}, team: "yellow" }));
+  const redPieces = pieceOrder.map((piece) => ({ id: piece, position: {}, team: "red" }));
+  if (piecesInGame.length === 0) return yellowPieces.concat(redPieces);
+  else if (piecesInGame.length === 16) return piecesInGame;
+  else if (piecesInGame.length === 8 && piecesInGame[0].team === "yellow") return piecesInGame.concat(redPieces);
+  else if (piecesInGame.length === 8 && piecesInGame[0].team === "red") return piecesInGame.concat(yellowPieces);
+  else throw new Error("db: getStartingPieces");
 }
 
 function getGamePieces(gameId) {
@@ -42,6 +34,14 @@ function getGamePieces(gameId) {
 
 function pushGamePieces(gameId, pieces) {
   allGames.find((element) => element.gameId === gameId).pieces = pieces;
+}
+
+function addReadyPlayer(gameId) {
+  allGames.find((element) => element.gameId === gameId).nPlayersReady += 1;
+}
+
+function getReadyPlayers(gameId) {
+  return allGames.find((element) => element.gameId === gameId).nPlayersReady;
 }
 
 function switchPlayerTurn(gameId) {
@@ -69,6 +69,8 @@ function assignTeamToPlayer(gameId, userId) {
 
 module.exports = {
   pushNewMockPiecesToDB,
+  addReadyPlayer,
+  getReadyPlayers,
   getStartingPieces,
   getGamePieces,
   assignTeamToPlayer,

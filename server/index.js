@@ -37,7 +37,6 @@ io.on("connection", (socket) => {
     socket.join(gameId);
     joinGame(socket, gameId);
     io.to(gameId).emit("updatePieces", db.getStartingPieces(gameId));
-    io.to(gameId).emit("updatePlayerTurn", db.getPlayerTurn(gameId));
   });
 
   socket.on("pieceMoved", (move) => {
@@ -54,6 +53,11 @@ io.on("connection", (socket) => {
     const updatedGamePieces = db.getGamePieces(gameId).concat(pieces);
     db.pushGamePieces(gameId, updatedGamePieces);
     io.to(gameId).emit("updatePieces", updatedGamePieces);
+    db.addReadyPlayer(gameId);
+    if (db.getReadyPlayers(gameId) === 2) {
+      io.to(gameId).emit("startGame");
+      io.to(gameId).emit("updatePlayerTurn", db.getPlayerTurn(gameId));
+    }
   });
 
   socket.on("disconnect", () => {
