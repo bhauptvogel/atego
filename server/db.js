@@ -17,15 +17,16 @@ function pushNewMockPiecesToDB(gameId) {
 }
 
 function getStartingPieces(gameId) {
-  const piecesInGame = allGames.find((element) => element.gameId === gameId).pieces;
-  const pieceOrder = ["bomb", "spy", "runner", "runner", "miner", "assassin", "killer", "mr_x"];
-  const yellowPieces = pieceOrder.map((piece) => ({ id: piece, position: {}, team: "yellow" }));
-  const redPieces = pieceOrder.map((piece) => ({ id: piece, position: {}, team: "red" }));
-  if (piecesInGame.length === 0) return yellowPieces.concat(redPieces);
-  else if (piecesInGame.length === 16) return piecesInGame;
-  else if (piecesInGame.length === 8 && piecesInGame[0].team === "yellow") return piecesInGame.concat(redPieces);
-  else if (piecesInGame.length === 8 && piecesInGame[0].team === "red") return piecesInGame.concat(yellowPieces);
-  else throw new Error("db: getStartingPieces");
+    const placedPiecesInGame = allGames.find((element) => element.gameId === gameId).pieces;
+    if (placedPiecesInGame.length === 16) return placedPiecesInGame;
+  
+    const startingGamePieces = ["bomb", "spy", "runner", "runner", "miner", "assassin", "killer", "mr_x"];
+    const yellowStartingPieces = startingGamePieces.map((piece) => ({ id: piece, position: {}, team: "yellow" }));
+    const redStartingPieces = startingGamePieces.map((piece) => ({ id: piece, position: {}, team: "red" }));
+    if (placedPiecesInGame.length === 0) return yellowStartingPieces.concat(redStartingPieces);
+    else if (placedPiecesInGame.length === 8 && placedPiecesInGame.filter((piece) => (piece.team === "yellow")).length === 8) return placedPiecesInGame.concat(redStartingPieces);
+    else if (placedPiecesInGame.length === 8 && placedPiecesInGame.filter((piece) => (piece.team === "red")).length === 8) return placedPiecesInGame.concat(yellowStartingPieces);
+    else throw new Error("db: getStartingPieces");
 }
 
 function getGamePieces(gameId) {

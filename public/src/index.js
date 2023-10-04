@@ -265,14 +265,13 @@ function renderGame() {
 function updatePieces(pieces) {
   pieceContainer.removeAllChildren();
   possibleMovesRenderer.removeAllChildren();
-  console.log(pieces);
   const addPiecesToCharacterSpace = clientCharacterSpace.children.length === 0;
   pieces.forEach((piece) => {
     if (Object.keys(piece.position).length !== 0)
       pieceContainer.addChild(new GamePiece(piece.id, piece.position, piece.team));
     else if (piece.team === clientTeam && addPiecesToCharacterSpace) {
       const unplacedPiece = new createjs.Container();
-      unplacedPiece.addChild(new createjs.Bitmap(loader.getResult(`${piece.id}-${clientTeam}`)));
+      unplacedPiece.addChild(new createjs.Bitmap(loader.getResult(`${piece.id}-${piece.team}`)));
       unplacedPiece.x = 16 + clientCharacterSpace.children.length * 96;
       unplacedPiece.y = 16;
       unplacedPiece.characterID = piece.id;
