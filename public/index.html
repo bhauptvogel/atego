@@ -17,12 +17,17 @@
       body {
         margin: 0;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         min-height: 100vh;
         background-color: rgb(206, 233, 219); /* or replace with 'beige' */
       }
 
+      canvas {
+        margin-bottom: 10px;
+        border: 1px solid #15b027;
+      }
 
       img,
       audio {
@@ -33,11 +38,11 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/src/index.js"></script>
     <!-- <script src="./src/field.js"></script> -->
-
   </head>
   <body>
     <body onload="init();">
       <canvas id="gameCanvas" width="512" height="640"></canvas>
+      <canvas id="characterCanvas" width="768" height="96"></canvas>
     </body>
   </body>
 </html>

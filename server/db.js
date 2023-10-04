@@ -9,31 +9,49 @@ function pushNewMockPiecesToDB(gameId) {
     gameId: gameId,
     playerIdYellow: undefined,
     playerIdRed: undefined,
-    turn: 'yellow',
-    pieces: [
-      { id: "runner", position: { x: 0, y: 0 }, team: "red" },
-      { id: "spy", position: { x: 1, y: 0 }, team: "red" },
-      { id: "runner", position: { x: 0, y: 4 }, team: "yellow" },
-    ],
+    turn: "yellow",
+    pieces: [],
   };
   allGames.push(mockStartingGames);
 }
 
-function getMockPiecesOfGame(gameId) {
+function getStartingPieces() {
+  return [
+    { id: "bomb", position: {}, team: "red" },
+    { id: "bomb", position: {}, team: "yellow" },
+    { id: "spy", position: {}, team: "red" },
+    { id: "spy", position: {}, team: "yellow" },
+    { id: "runner", position: {}, team: "red" },
+    { id: "runner", position: {}, team: "yellow" },
+    { id: "runner", position: {}, team: "red" },
+    { id: "runner", position: {}, team: "yellow" },
+    { id: "miner", position: {}, team: "red" },
+    { id: "miner", position: {}, team: "yellow" },
+    { id: "assassin", position: {}, team: "red" },
+    { id: "assassin", position: {}, team: "yellow" },
+    { id: "killer", position: {}, team: "red" },
+    { id: "killer", position: {}, team: "yellow" },
+    { id: "mr_x", position: {}, team: "red" },
+    { id: "mr_x", position: {}, team: "yellow" },
+  ];
+}
+
+function getGamePieces(gameId) {
   return allGames.find((element) => element.gameId === gameId).pieces;
 }
 
-function pushMockPiecesOfGame(gameId, pieces) {
+function pushGamePieces(gameId, pieces) {
   allGames.find((element) => element.gameId === gameId).pieces = pieces;
 }
 
 function switchPlayerTurn(gameId) {
   const oldTurn = allGames.find((element) => element.gameId === gameId).turn;
-  allGames.find((element) => element.gameId === gameId).turn = oldTurn === "yellow" ? "red" : "yellow";
+  allGames.find((element) => element.gameId === gameId).turn =
+    oldTurn === "yellow" ? "red" : "yellow";
 }
 
 function getPlayerTurn(gameId) {
-    return allGames.find((element) => element.gameId === gameId).turn;
+  return allGames.find((element) => element.gameId === gameId).turn;
 }
 
 function assignTeamToPlayer(gameId, userId) {
@@ -51,9 +69,10 @@ function assignTeamToPlayer(gameId, userId) {
 
 module.exports = {
   pushNewMockPiecesToDB,
-  getMockPiecesOfGame,
+  getStartingPieces,
+  getGamePieces,
   assignTeamToPlayer,
-  pushMockPiecesOfGame,
+  pushGamePieces,
   getPlayerTurn,
   switchPlayerTurn,
 };
