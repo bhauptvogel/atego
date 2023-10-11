@@ -142,7 +142,11 @@ function clickedOnField(evt) {
         pieceContainer.children
           .map((piece) => piece.field)
           .filter((field) => clickedField.x === field.x && clickedField.y === field.y).length > 0;
-      if (!fieldIsOccupied) {
+      const teamArea =
+        clientTeam === "red" ? { x: [0, 1, 2, 3], y: [0, 1] } : { x: [0, 1, 2, 3], y: [3, 4] };
+      const fieldIsInTeamArea =
+        teamArea.x.includes(clickedField.x) && teamArea.y.includes(clickedField.y);
+      if (!fieldIsOccupied && fieldIsInTeamArea) {
         pieceContainer.addChild(
           new GamePiece(clientCharacterSpace.selectedPiece.characterID, clickedField, clientTeam)
         );
@@ -187,7 +191,7 @@ function clickedOnField(evt) {
   if (currentTurn === clientTeam) selectPiece(clickedField.x, clickedField.y);
 }
 
-function selectUnplacedPiece(evt) {
+function clickedOnClientCharacterSpace(evt) {
   if (!gameStarted)
     for (const unplacedPiece of clientCharacterSpace.children) {
       if (
@@ -222,8 +226,9 @@ function drawGameField() {
 }
 
 function updatePieces(pieces) {
-  pieceContainer.removeAllChildren();
+  if (gameStarted) pieceContainer.removeAllChildren();
   possibleMovesRenderer.removeAllChildren();
+  console.log(gameStarted);
   const addPiecesToCharacterSpace = clientCharacterSpace.children.length === 0;
   pieces.forEach((piece) => {
     if (Object.keys(piece.position).length !== 0)
@@ -283,7 +288,7 @@ function renderGame() {
   mainStage.addChild(pieceContainer);
   mainStage.addChild(possibleMovesRenderer);
   mainStage.on("stagemousedown", (evt) => clickedOnField(evt));
-  clientCharacterSpace.on("stagemousedown", (evt) => selectUnplacedPiece(evt));
+  clientCharacterSpace.on("stagemousedown", (evt) => clickedOnClientCharacterSpace(evt));
   mainStage.update();
   connectToServer();
 }
