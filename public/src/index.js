@@ -10,7 +10,7 @@ class GamePiece extends createjs.Container {
     this.isSelected = false;
 
     this.team = pieceTeam;
-    if (this.team === clientTeam)
+    if (this.team === heroTeam)
       this.bitmapImage = new createjs.Bitmap(loader.getResult(`${this.characterID}-${this.team}`));
     else this.bitmapImage = new createjs.Bitmap(loader.getResult(`unknown-${this.team}`));
 
@@ -113,7 +113,7 @@ function selectPiece(fieldX, fieldY) {
   deselectAllPieces();
 
   for (const piece of pieceContainer.children) {
-    if (piece.field.x == fieldX && piece.field.y == fieldY && clientTeam == piece.team) {
+    if (piece.field.x == fieldX && piece.field.y == fieldY && heroTeam == piece.team) {
       piece.isSelected = true;
       possibleMovesRenderer.render(piece.getPossibleMoves());
       mainStage.update();
@@ -128,7 +128,7 @@ function deselectAllPieces() {
 }
 
 function clickedOnField(evt) {
-  if (!clientTeam) return;
+  if (!heroTeam) return;
 
   const clickedField = {
     x: Math.floor(evt.stageX / tileSize),
@@ -137,27 +137,27 @@ function clickedOnField(evt) {
 
   // PLACING
   if (!gameStarted) {
-    if (clientCharacterSpace.selectedPiece !== undefined) {
+    if (heroCharacterSpace.selectedPiece !== undefined) {
       const fieldIsOccupied =
         pieceContainer.children
           .map((piece) => piece.field)
           .filter((field) => clickedField.x === field.x && clickedField.y === field.y).length > 0;
       const teamArea =
-        clientTeam === "red" ? { x: [0, 1, 2, 3], y: [0, 1] } : { x: [0, 1, 2, 3], y: [3, 4] };
+        heroTeam === "red" ? { x: [0, 1, 2, 3], y: [0, 1] } : { x: [0, 1, 2, 3], y: [3, 4] };
       const fieldIsInTeamArea =
         teamArea.x.includes(clickedField.x) && teamArea.y.includes(clickedField.y);
       if (!fieldIsOccupied && fieldIsInTeamArea) {
         pieceContainer.addChild(
-          new GamePiece(clientCharacterSpace.selectedPiece.characterID, clickedField, clientTeam)
+          new GamePiece(heroCharacterSpace.selectedPiece.characterID, clickedField, heroTeam)
         );
-        clientCharacterSpace.removeChild(clientCharacterSpace.selectedPiece);
-        clientCharacterSpace.update();
-        clientCharacterSpace.selectedPiece = undefined;
+        heroCharacterSpace.removeChild(heroCharacterSpace.selectedPiece);
+        heroCharacterSpace.update();
+        heroCharacterSpace.selectedPiece = undefined;
         mainStage.update();
-        if (clientCharacterSpace.children.length === 0) {
+        if (heroCharacterSpace.children.length === 0) {
           const packagePieces = [];
           pieceContainer.children
-            .filter((piece) => piece.team === clientTeam)
+            .filter((piece) => piece.team === heroTeam)
             .forEach((piece) =>
               packagePieces.push({ id: piece.characterID, position: piece.field, team: piece.team })
             );
@@ -188,19 +188,19 @@ function clickedOnField(evt) {
   }
 
   // SELECTING
-  if (currentTurn === clientTeam) selectPiece(clickedField.x, clickedField.y);
+  if (currentTurn === heroTeam) selectPiece(clickedField.x, clickedField.y);
 }
 
 function clickedOnClientCharacterSpace(evt) {
   if (!gameStarted)
-    for (const unplacedPiece of clientCharacterSpace.children) {
+    for (const unplacedPiece of heroCharacterSpace.children) {
       if (
         evt.stageX > unplacedPiece.x - 8 &&
         evt.stageY > unplacedPiece.y - 8 &&
         evt.stageX < unplacedPiece.x + 64 + 8 &&
         evt.stageY < unplacedPiece.y + 64 + 8
       ) {
-        clientCharacterSpace.selectedPiece = unplacedPiece;
+        heroCharacterSpace.selectedPiece = unplacedPiece;
       }
     }
 }
@@ -226,34 +226,46 @@ function drawGameField() {
 }
 
 function updatePieces(pieces) {
-  if (gameStarted) pieceContainer.removeAllChildren();
+  if (gameStarted) {
+    pieceContainer.removeAllChildren();
+    heroCharacterSpace.removeAllChildren();
+    villainCharacterSpace.removeAllChildren();
+  }
   possibleMovesRenderer.removeAllChildren();
-  const addPiecesToCharacterSpace = clientCharacterSpace.children.length === 0;
+  const heroCharacterSpaceIsEmpty = heroCharacterSpace.children.length === 0;
   pieces.forEach((piece) => {
     if (Object.keys(piece.position).length !== 0)
       pieceContainer.addChild(new GamePiece(piece.id, piece.position, piece.team));
-    else if (piece.team === clientTeam && addPiecesToCharacterSpace) {
-      const unplacedPiece = new createjs.Container();
-      unplacedPiece.addChild(new createjs.Bitmap(loader.getResult(`${piece.id}-${piece.team}`)));
-      unplacedPiece.x = 16 + clientCharacterSpace.children.length * 96;
-      unplacedPiece.y = 16;
-      unplacedPiece.characterID = piece.id;
-      clientCharacterSpace.addChild(unplacedPiece);
-    }
+    else if (
+      (piece.team !== heroTeam && gameStarted) ||
+      (piece.team === heroTeam && heroCharacterSpaceIsEmpty)
+    )
+      addPieceToSpace(piece.id, piece.team);
   });
   mainStage.update();
-  clientCharacterSpace.update();
+  heroCharacterSpace.update();
+  villainCharacterSpace.update();
 }
 
+function addPieceToSpace(id, team) {
+  const deadPiece = new createjs.Container();
+  deadPiece.addChild(new createjs.Bitmap(loader.getResult(`${id}-${team}`)));
+  const space = team === heroTeam ? heroCharacterSpace : villainCharacterSpace;
+  deadPiece.x = 16 + space.children.length * 96;
+  deadPiece.y = 16;
+  deadPiece.characterID = id;
+  space.addChild(deadPiece);
+}
 // ------------ ENTRY POINT ------------
 function init() {
   // Global client variables
   mainStage = new createjs.Stage("gameCanvas");
-  clientCharacterSpace = new createjs.Stage("characterCanvas");
+  heroCharacterSpace = new createjs.Stage("heroCharacterCanvas");
+  villainCharacterSpace = new createjs.Stage("villainCharacterCanvas");
   loader = new createjs.LoadQueue(false);
   pieceContainer = new createjs.Container();
   possibleMovesRenderer = new possibleMovesContainer();
-  clientTeam = undefined;
+  heroTeam = undefined;
   currentTurn = undefined;
   gameStarted = false;
 
@@ -278,8 +290,9 @@ function connectToServer() {
   // DEFINING EVENTS
   socket.on("updatePieces", (pieces) => updatePieces(pieces));
   socket.on("updatePlayerTurn", (updatedTurn) => (currentTurn = updatedTurn));
-  socket.on("assignTeam", (assignedTeam) => (clientTeam = assignedTeam));
+  socket.on("assignTeam", (assignedTeam) => (heroTeam = assignedTeam));
   socket.on("startGame", () => (gameStarted = true));
+  socket.on("newDeadPiece", (piece) => addDeadPieceToSpace(piece));
 }
 
 function renderGame() {
@@ -287,7 +300,7 @@ function renderGame() {
   mainStage.addChild(pieceContainer);
   mainStage.addChild(possibleMovesRenderer);
   mainStage.on("stagemousedown", (evt) => clickedOnField(evt));
-  clientCharacterSpace.on("stagemousedown", (evt) => clickedOnClientCharacterSpace(evt));
+  heroCharacterSpace.on("stagemousedown", (evt) => clickedOnClientCharacterSpace(evt));
   mainStage.update();
   connectToServer();
 }
