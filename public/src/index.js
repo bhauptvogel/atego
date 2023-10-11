@@ -228,7 +228,6 @@ function drawGameField() {
 function updatePieces(pieces) {
   if (gameStarted) pieceContainer.removeAllChildren();
   possibleMovesRenderer.removeAllChildren();
-  console.log(gameStarted);
   const addPiecesToCharacterSpace = clientCharacterSpace.children.length === 0;
   pieces.forEach((piece) => {
     if (Object.keys(piece.position).length !== 0)
