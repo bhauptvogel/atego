@@ -131,3 +131,4 @@ dist
 
 .vscode/*
 next-up.md
+public/assets/changer.py

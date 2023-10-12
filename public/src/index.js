@@ -93,10 +93,11 @@ class possibleMovesContainer extends createjs.Container {
       const radius = 10;
       const x = possibleMovesList[i].x * tileSize + tileSize / 2;
       const y = possibleMovesList[i].y * tileSize + tileSize / 2;
-      const color = fieldOccupiedByTeam(possibleMovesList[i].x, possibleMovesList[i].y)
-        ? "orange"
-        : "green";
-      circle.graphics.beginFill(color).drawCircle(x, y, radius);
+      const color = "#646669";
+      if (fieldOccupiedByTeam(possibleMovesList[i].x, possibleMovesList[i].y))
+        circle.graphics.beginFill(color);
+      else circle.graphics.setStrokeStyle(2).beginStroke(color);
+      circle.graphics.drawCircle(x, y, radius);
       this.addChild(circle);
     }
   }
@@ -162,6 +163,7 @@ function clickedOnField(evt) {
               packagePieces.push({ id: piece.characterID, position: piece.field, team: piece.team })
             );
           socket.emit("allPiecesPlaced", packagePieces);
+          mainStage.removeChild(heroArea);
         }
       }
     }
@@ -210,14 +212,14 @@ function drawGameField() {
   for (let x = 1; x < nFieldsWidth; x++) {
     board.graphics
       .setStrokeStyle(1)
-      .beginStroke("#000000")
+      .beginStroke("#646669")
       .moveTo(tileSize * x, 0)
       .lineTo(tileSize * x, nFieldsHeight * tileSize);
   }
   for (let y = 1; y < nFieldsHeight; y++) {
     board.graphics
       .setStrokeStyle(1)
-      .beginStroke("#000000")
+      .beginStroke("#646669")
       .moveTo(0, tileSize * y)
       .lineTo(nFieldsHeight * tileSize, tileSize * y);
   }
@@ -225,13 +227,27 @@ function drawGameField() {
   mainStage.update();
 }
 
+function visualizeTeamArea() {
+  if (!heroTeam) return;
+  heroArea = new createjs.Shape();
+  heroArea.graphics.beginFill("rgb(55, 61, 73, 0.4)");
+  if (heroTeam === "yellow")
+    heroArea.graphics.drawRect(0, tileSize * 3, mainStage.canvas.width, tileSize * 2);
+  else heroArea.graphics.drawRect(0, 0, mainStage.canvas.width, tileSize * 2);
+  mainStage.addChild(heroArea);
+}
+
 function updatePieces(pieces) {
   if (gameStarted) {
     pieceContainer.removeAllChildren();
     heroCharacterSpace.removeAllChildren();
     villainCharacterSpace.removeAllChildren();
-  }
-  possibleMovesRenderer.removeAllChildren();
+    possibleMovesRenderer.removeAllChildren();
+  } else if (
+    pieces.filter((piece) => piece.team !== heroTeam && Object.keys(piece.position).length > 0)
+      .length > 0
+  )
+    villainCharacterSpace.removeChild(textWaitingforOpponent);
   const heroCharacterSpaceIsEmpty = heroCharacterSpace.children.length === 0;
   pieces.forEach((piece) => {
     if (Object.keys(piece.position).length !== 0)
@@ -245,6 +261,16 @@ function updatePieces(pieces) {
   mainStage.update();
   heroCharacterSpace.update();
   villainCharacterSpace.update();
+}
+
+function drawWaitingForOpponent() {
+  const opponentTeam = heroTeam === "red" ? "yellow" : "red";
+  textWaitingforOpponent = new createjs.Text("Waiting for Opponent...", "25px Arial", opponentTeam);
+  textWaitingforOpponent.textAlign = "center";
+  textWaitingforOpponent.x = villainCharacterSpace.canvas.width / 2;
+  textWaitingforOpponent.y = villainCharacterSpace.canvas.height / 2;
+  if (pieceContainer.children.filter((piece) => piece.team === opponentTeam).length === 0)
+    villainCharacterSpace.addChild(textWaitingforOpponent);
 }
 
 function addPieceToSpace(id, team) {
@@ -290,7 +316,11 @@ function connectToServer() {
   // DEFINING EVENTS
   socket.on("updatePieces", (pieces) => updatePieces(pieces));
   socket.on("updatePlayerTurn", (updatedTurn) => (currentTurn = updatedTurn));
-  socket.on("assignTeam", (assignedTeam) => (heroTeam = assignedTeam));
+  socket.on("assignTeam", (assignedTeam) => {
+    heroTeam = assignedTeam;
+    visualizeTeamArea();
+    drawWaitingForOpponent();
+  });
   socket.on("startGame", () => (gameStarted = true));
   socket.on("newDeadPiece", (piece) => addDeadPieceToSpace(piece));
 }
