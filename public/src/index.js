@@ -18,8 +18,8 @@ class GamePiece extends createjs.Container {
   }
 
   moveToField(fieldX, fieldY) {
-    this.x = fieldX * tileSize + tileSize / 4;
-    this.y = fieldY * tileSize + tileSize / 4;
+    this.x = flipFieldXIfRed(fieldX) * tileSize + tileSize / 4;
+    this.y = flipFieldYIfRed(fieldY) * tileSize + tileSize / 4;
     this.field = { x: fieldX, y: fieldY };
   }
 
@@ -91,8 +91,8 @@ class possibleMovesContainer extends createjs.Container {
     for (let i = 0; i < possibleMovesList.length; i++) {
       const circle = new createjs.Shape();
       const radius = 10;
-      const x = possibleMovesList[i].x * tileSize + tileSize / 2;
-      const y = possibleMovesList[i].y * tileSize + tileSize / 2;
+      const x = flipFieldXIfRed(possibleMovesList[i].x) * tileSize + tileSize / 2;
+      const y = flipFieldYIfRed(possibleMovesList[i].y) * tileSize + tileSize / 2;
       const color = "#646669";
       if (fieldOccupiedByTeam(possibleMovesList[i].x, possibleMovesList[i].y))
         circle.graphics.beginFill(color);
@@ -122,6 +122,15 @@ function selectPiece(fieldX, fieldY) {
   }
 }
 
+function flipFieldXIfRed(x) {
+  if (heroTeam !== "red") return x;
+  return nFieldsWidth - 1 - x;
+}
+function flipFieldYIfRed(y) {
+  if (heroTeam !== "red") return y;
+  return nFieldsHeight - 1 - y;
+}
+
 function deselectAllPieces() {
   possibleMovesRenderer.removeAllChildren();
   pieceContainer.children.forEach((piece) => (piece.isSelected = false));
@@ -132,8 +141,8 @@ function clickedOnField(evt) {
   if (!heroTeam) return;
 
   const clickedField = {
-    x: Math.floor(evt.stageX / tileSize),
-    y: Math.floor(evt.stageY / tileSize),
+    x: flipFieldXIfRed(Math.floor(evt.stageX / tileSize)),
+    y: flipFieldYIfRed(Math.floor(evt.stageY / tileSize)),
   };
 
   // PLACING
@@ -231,9 +240,7 @@ function visualizeTeamArea() {
   if (!heroTeam) return;
   heroArea = new createjs.Shape();
   heroArea.graphics.beginFill("rgb(55, 61, 73, 0.4)");
-  if (heroTeam === "yellow")
-    heroArea.graphics.drawRect(0, tileSize * 3, mainStage.canvas.width, tileSize * 2);
-  else heroArea.graphics.drawRect(0, 0, mainStage.canvas.width, tileSize * 2);
+  heroArea.graphics.drawRect(0, tileSize * 3, mainStage.canvas.width, tileSize * 2);
   mainStage.addChild(heroArea);
 }
 
