@@ -42,10 +42,16 @@ io.on("connection", (socket) => {
   socket.on("pieceMoved", (move) => {
     const gameId = findPlayerGame(socket.id);
     const updatedGamePieces = gameLogic.movePiece(db.getGamePieces(gameId), move);
+    const gameOver = gameLogic.isGameOver(updatedGamePieces);
     db.pushGamePieces(gameId, updatedGamePieces);
     io.to(gameId).emit("updatePieces", updatedGamePieces);
-    db.switchPlayerTurn(gameId);
-    io.to(gameId).emit("updatePlayerTurn", db.getPlayerTurn(gameId));
+    if (gameOver) {
+      io.to(gameId).emit("gameOver", gameOver);
+      db.deleteGame(gameId);
+    } else {
+      db.switchPlayerTurn(gameId);
+      io.to(gameId).emit("updatePlayerTurn", db.getPlayerTurn(gameId));
+    }
   });
 
   socket.on("allPiecesPlaced", (pieces) => {

@@ -138,7 +138,7 @@ function deselectAllPieces() {
 }
 
 function clickedOnField(evt) {
-  if (!heroTeam) return;
+  if (!heroTeam || gameOver) return;
 
   const clickedField = {
     x: flipFieldXIfRed(Math.floor(evt.stageX / tileSize)),
@@ -305,6 +305,7 @@ function init() {
   heroTeam = undefined;
   currentTurn = undefined;
   gameStarted = false;
+  gameOver = false;
 
   const manifest = ["bomb", "spy", "runner", "miner", "assassin", "killer", "mr_x", "unknown"]
     .map((char) => [
@@ -334,6 +335,7 @@ function connectToServer() {
   });
   socket.on("startGame", () => (gameStarted = true));
   socket.on("newDeadPiece", (piece) => addDeadPieceToSpace(piece));
+  socket.on("gameOver", (winningTeam) => (gameOver = winningTeam));
 }
 
 function renderGame() {
