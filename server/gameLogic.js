@@ -18,17 +18,15 @@ function movePiece(pieces, move) {
         const targetPieceCharacter = characters.characters.find(
           (character) => character.id === targetFieldPiece.id
         );
-        if (movingPieceCharacter.n === targetPieceCharacter.n)
-          pieces = pieces.map((p) =>
-            p === piece || p === targetFieldPiece ? { ...p, position: {} } : p
-          );
-        else if (movingPieceCharacter.beats.includes(targetPieceCharacter.n))
-          pieces = pieces.map((p) => (p === targetFieldPiece ? { ...p, position: {} } : p));
-        else if (targetPieceCharacter.beats.includes(movingPieceCharacter.n))
-          pieces = pieces.map((p) => (p === piece ? { ...p, position: {} } : p));
-        else throw new Error("fighting: Nobody dies which is not allowed in a fight!");
+        if (targetPieceCharacter.beats.includes(movingPieceCharacter.n)) piece.position = {};
+        piece.hasFought = true;
+
+        if (movingPieceCharacter.beats.includes(targetPieceCharacter.n))
+          targetFieldPiece.position = {};
+        targetFieldPiece.hasFought = true;
       }
-      piece.position = move.to;
+      if (Object.keys(piece.position).length > 0) piece.position = move.to;
+      console.log(pieces);
       return pieces;
     }
   }

@@ -3,14 +3,14 @@ const nFieldsWidth = 4;
 const nFieldsHeight = 5;
 
 class GamePiece extends createjs.Container {
-  constructor(characterID, field, pieceTeam) {
+  constructor(characterID, field, pieceTeam, hasFought) {
     super();
     this.characterID = characterID;
     this.moveToField(field.x, field.y);
     this.isSelected = false;
 
     this.team = pieceTeam;
-    if (this.team === heroTeam)
+    if (this.team === heroTeam || hasFought)
       this.bitmapImage = new createjs.Bitmap(loader.getResult(`${this.characterID}-${this.team}`));
     else this.bitmapImage = new createjs.Bitmap(loader.getResult(`unknown-${this.team}`));
 
@@ -152,8 +152,7 @@ function clickedOnField(evt) {
         pieceContainer.children
           .map((piece) => piece.field)
           .filter((field) => clickedField.x === field.x && clickedField.y === field.y).length > 0;
-      const teamArea =
-        heroTeam === "red" ? { x: [0, 1, 2, 3], y: [0, 1] } : { x: [0, 1, 2, 3], y: [3, 4] };
+      const teamArea = { x: [0, 1, 2, 3], y: heroTeam === "red" ? [0, 1] : [3, 4] };
       const fieldIsInTeamArea =
         teamArea.x.includes(clickedField.x) && teamArea.y.includes(clickedField.y);
       if (!fieldIsOccupied && fieldIsInTeamArea) {
@@ -169,7 +168,12 @@ function clickedOnField(evt) {
           pieceContainer.children
             .filter((piece) => piece.team === heroTeam)
             .forEach((piece) =>
-              packagePieces.push({ id: piece.characterID, position: piece.field, team: piece.team })
+              packagePieces.push({
+                id: piece.characterID,
+                position: piece.field,
+                team: piece.team,
+                hasFought: false,
+              })
             );
           socket.emit("allPiecesPlaced", packagePieces);
           mainStage.removeChild(heroArea);
@@ -258,7 +262,7 @@ function updatePieces(pieces) {
   const heroCharacterSpaceIsEmpty = heroCharacterSpace.children.length === 0;
   pieces.forEach((piece) => {
     if (Object.keys(piece.position).length !== 0)
-      pieceContainer.addChild(new GamePiece(piece.id, piece.position, piece.team));
+      pieceContainer.addChild(new GamePiece(piece.id, piece.position, piece.team, piece.hasFought));
     else if (
       (piece.team !== heroTeam && gameStarted) ||
       (piece.team === heroTeam && heroCharacterSpaceIsEmpty)
