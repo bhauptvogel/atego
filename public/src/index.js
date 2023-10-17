@@ -293,6 +293,20 @@ function addPieceToSpace(id, team) {
   deadPiece.characterID = id;
   space.addChild(deadPiece);
 }
+
+function visualizeEndOfGame(winningTeam) {
+  gameOver = winningTeam;
+  const endOfGameString =
+    winningTeam === heroTeam ? "You won!" : winningTeam === "tie" ? "Tie!" : "You lost!";
+  const endOfGameTextColor = winningTeam === heroTeam ? "green" : "black";
+  const textEndOfGame = new createjs.Text(endOfGameString, "60px Arial", endOfGameTextColor);
+  textEndOfGame.textAlign = "center";
+  textEndOfGame.textBaseline = "middle";
+  textEndOfGame.x = mainStage.canvas.width / 2;
+  textEndOfGame.y = mainStage.canvas.height / 2;
+  mainStage.addChild(textEndOfGame);
+  mainStage.update();
+}
 // ------------ ENTRY POINT ------------
 function init() {
   // Global client variables
@@ -335,7 +349,7 @@ function connectToServer() {
   });
   socket.on("startGame", () => (gameStarted = true));
   socket.on("newDeadPiece", (piece) => addDeadPieceToSpace(piece));
-  socket.on("gameOver", (winningTeam) => (gameOver = winningTeam));
+  socket.on("gameOver", (winningTeam) => visualizeEndOfGame(winningTeam));
 }
 
 function renderGame() {
