@@ -47,7 +47,46 @@ function isGameOver(pieces) {
   return null;
 }
 
+function getStartingPieces(placedPiecesInGame) {
+  if (placedPiecesInGame.length === 16) return placedPiecesInGame;
+
+  const startingGamePieces = [
+    "bomb",
+    "spy",
+    "runner",
+    "runner",
+    "miner",
+    "assassin",
+    "killer",
+    "mr_x",
+  ];
+  const yellowStartingPieces = startingGamePieces.map((piece) => ({
+    id: piece,
+    position: {},
+    team: "yellow",
+    hasFought: false,
+  }));
+  const redStartingPieces = startingGamePieces.map((piece) => ({
+    id: piece,
+    position: {},
+    team: "red",
+    hasFought: false,
+  }));
+  if (placedPiecesInGame.length === 0) return yellowStartingPieces.concat(redStartingPieces);
+  else if (
+    placedPiecesInGame.length === 8 &&
+    placedPiecesInGame.filter((piece) => piece.team === "yellow").length === 8
+  )
+    return placedPiecesInGame.concat(redStartingPieces);
+  else if (
+    placedPiecesInGame.length === 8 &&
+    placedPiecesInGame.filter((piece) => piece.team === "red").length === 8
+  )
+    return placedPiecesInGame.concat(yellowStartingPieces);
+  else throw new Error("getStartingPieces");
+}
 module.exports = {
   movePiece,
+  getStartingPieces,
   isGameOver,
 };

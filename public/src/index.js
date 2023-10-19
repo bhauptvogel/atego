@@ -297,7 +297,7 @@ function addPieceToSpace(id, team) {
 function visualizeEndOfGame(winningTeam) {
   gameOver = winningTeam;
   const endOfGameString =
-    winningTeam === heroTeam ? "You won!" : winningTeam === "tie" ? "Tie!" : "You lost!";
+    winningTeam === heroTeam ? "You win!" : winningTeam === "tie" ? "Tie!" : "You lose!";
   const endOfGameTextColor = winningTeam === heroTeam ? "green" : "black";
   const textEndOfGame = new createjs.Text(endOfGameString, "60px Arial", endOfGameTextColor);
   textEndOfGame.textAlign = "center";

@@ -48,9 +48,7 @@ io.on("connection", (socket) => {
         io.to(gameId).emit("gameOver", gameOver);
         db.deleteGame(gameId);
       } else {
-        db.switchPlayerTurn(gameId).then(
-          db.getPlayerTurn(gameId).then((turn) => io.to(gameId).emit("updatePlayerTurn", turn))
-        );
+        db.switchPlayerTurn(gameId).then((turn) => io.to(gameId).emit("updatePlayerTurn", turn));
       }
     });
   });
@@ -65,7 +63,7 @@ io.on("connection", (socket) => {
           db.getReadyPlayers(gameId).then((nPlayersReady) => {
             if (nPlayersReady === 2) {
               io.to(gameId).emit("startGame");
-              db.getPlayerTurn(gameId).then((turn) => io.to(gameId).emit("updatePlayerTurn", turn));
+              io.to(gameId).emit("updatePlayerTurn", "yellow");
             }
           })
         );
@@ -89,9 +87,10 @@ async function joinGame(socket, gameId) {
   db.assignTeamToPlayer(gameId, socket.id).then(() =>
     db.getPlayerTeam(gameId, socket.id).then((team) => {
       socket.emit("assignTeam", team);
-      db.getStartingPieces(gameId).then((gamePieces) =>
-        io.to(gameId).emit("updatePieces", gamePieces)
-      );
+      db.getGamePieces(gameId).then((gamePieces) => {
+        const updatedGamePieces = gameLogic.getStartingPieces(gamePieces);
+        io.to(gameId).emit("updatePieces", updatedGamePieces);
+      });
     })
   );
 }
