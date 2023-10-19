@@ -1,25 +1,50 @@
-const allGames = [];
+const mongoose = require("mongoose");
+// https://chat.openai.com/c/43c1e096-c174-4397-a10c-61da7594385a
+// Connection URL
+const url = "mongodb://localhost:27017/mygame";
 
-function pushNewMockPiecesToDB(gameId) {
-  if (allGames.find((element) => element.gameId === gameId) !== undefined) {
-    console.error(`Mock pieces already exist for game ${gameId}.`);
-    return;
-  }
-  const mockGameInformation = {
+mongoose
+  .connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log("Connected to MongoDB!");
+  })
+  .catch((err) => {
+    console.error("Error connecting to MongoDB:", err);
+  });
+
+const gameSchema = new mongoose.Schema({
+  gameId: String,
+  playerIdYellow: String,
+  playerIdRed: String,
+  nPlayersReady: Number,
+  turn: String,
+  pieces: Array,
+  gameOver: Boolean,
+});
+
+const Game = mongoose.model("Game", gameSchema);
+
+async function createNewGame(gameId) {
+  const game = await Game.findOne({ gameId: gameId });
+  if (game !== null) throw new Error("Game already Exists!");
+  const newGame = new Game({
     gameId: gameId,
-    playerIdYellow: undefined,
-    playerIdRed: undefined,
+    playerIdYellow: null,
+    playerIdRed: null,
     nPlayersReady: 0,
     turn: "yellow",
     pieces: [],
     gameOver: false,
-  };
-  allGames.push(mockGameInformation);
+  });
+  //   newGame.save();
+  return await Game.create(newGame);
 }
 
 // TODO: put into gameLogic.js
-function getStartingPieces(gameId) {
-  const placedPiecesInGame = allGames.find((element) => element.gameId === gameId).pieces;
+async function getStartingPieces(gameId) {
+  const game = await Game.findOne({ gameId: gameId });
+  if (game === null) throw new Error("Game does not exist!");
+  const placedPiecesInGame = game.pieces;
   if (placedPiecesInGame.length === 16) return placedPiecesInGame;
 
   const startingGamePieces = [
@@ -58,53 +83,69 @@ function getStartingPieces(gameId) {
   else throw new Error("db: getStartingPieces");
 }
 
-function getGamePieces(gameId) {
-  return allGames.find((element) => element.gameId === gameId).pieces;
+async function getGamePieces(gameId) {
+  const game = await Game.findOne({ gameId: gameId });
+  return game.pieces;
 }
 
-function pushGamePieces(gameId, pieces) {
+async function pushGamePieces(gameId, pieces) {
   // TODO: validate that game is not over
-  allGames.find((element) => element.gameId === gameId).pieces = pieces;
+  return await Game.updateOne({ gameId: gameId }, { pieces: pieces });
 }
 
-function addReadyPlayer(gameId) {
-  allGames.find((element) => element.gameId === gameId).nPlayersReady += 1;
+async function addReadyPlayer(gameId) {
+  const game = await Game.findOne({ gameId: gameId });
+  return await Game.updateOne({ gameId: gameId }, { nPlayersReady: game.nPlayersReady + 1 });
 }
 
-function getReadyPlayers(gameId) {
-  return allGames.find((element) => element.gameId === gameId).nPlayersReady;
+async function getReadyPlayers(gameId) {
+  const game = await Game.findOne({ gameId: gameId });
+  return game.nPlayersReady;
 }
 
-function switchPlayerTurn(gameId) {
+async function switchPlayerTurn(gameId) {
   // TODO: validate that game is not over
-  const oldTurn = allGames.find((element) => element.gameId === gameId).turn;
-  allGames.find((element) => element.gameId === gameId).turn =
-    oldTurn === "yellow" ? "red" : "yellow";
+  const game = await Game.findOne({ gameId: gameId });
+  return await Game.updateOne(
+    { gameId: gameId },
+    { turn: game.turn === "yellow" ? "red" : "yellow" }
+  );
 }
 
-function getPlayerTurn(gameId) {
-  return allGames.find((element) => element.gameId === gameId).turn;
+async function getPlayerTurn(gameId) {
+  const game = await Game.findOne({ gameId: gameId });
+  return game.turn;
 }
 
-function assignTeamToPlayer(gameId, userId) {
-  const game = allGames.find((element) => element.gameId === gameId);
-  if (game.playerIdYellow === undefined) {
-    allGames.find((element) => element.gameId === gameId).playerIdYellow = userId;
-    return "yellow";
-  } else if (game.playerIdRed === undefined) {
-    allGames.find((element) => element.gameId === gameId).playerIdRed = userId;
-    return "red";
-  } else {
-    return ""; // both teams are already assigned!
+async function assignTeamToPlayer(gameId, userId) {
+  const game = await Game.findOne({ gameId: gameId });
+  if (game.playerIdYellow === null) {
+    const res = await Game.updateOne({ gameId: gameId }, { playerIdYellow: userId });
+  } else if (game.playerIdRed === null) {
+    const res = await Game.updateOne({ gameId: gameId }, { playerIdRed: userId });
   }
 }
 
+async function getPlayerTeam(gameId, userId) {
+  const game = await Game.findOne({ gameId: gameId });
+  if (game === null) throw new Error("Game is null!");
+  else if (game.playerIdYellow === userId) return "yellow";
+  else if (game.playerIdRed === userId) return "red";
+  else return "";
+}
+
 function deleteGame(gameId) {
-  allGames.find((element) => element.gameId === gameId).gameOver = true;
+  Game.deleteOne({ gameId: gameId }).then(console.log("Game Deleted!"));
+}
+
+async function findGameWithPlayer(playerId) {
+  const game = await Game.findOne({ playerIdYellow: playerId });
+  if (game !== null) return game;
+  return await Game.findOne({ playerIdRed: playerId });
 }
 
 module.exports = {
-  pushNewMockPiecesToDB,
+  createNewGame,
   addReadyPlayer,
   getReadyPlayers,
   getStartingPieces,
@@ -114,4 +155,6 @@ module.exports = {
   getPlayerTurn,
   deleteGame,
   switchPlayerTurn,
+  getPlayerTeam,
+  findGameWithPlayer,
 };

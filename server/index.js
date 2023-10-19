@@ -31,57 +31,69 @@ io.on("connection", (socket) => {
   socket.on("joinGame", (gameId) => {
     let room = io.sockets.adapter.rooms.get(gameId);
 
-    if (!room) db.pushNewMockPiecesToDB(gameId);
-    else if (room.size >= 2) console.error(`The room is already full!`);
-
-    socket.join(gameId);
-    joinGame(socket, gameId);
-    io.to(gameId).emit("updatePieces", db.getStartingPieces(gameId));
+    if (!room) db.createNewGame(gameId).then(() => joinGame(socket, gameId));
+    else if (room.size < 2) joinGame(socket, gameId);
+    else console.error(`The room is already full!`);
+    // TODO: Show pieces for players without team
   });
 
   socket.on("pieceMoved", (move) => {
-    const gameId = findPlayerGame(socket.id);
-    const updatedGamePieces = gameLogic.movePiece(db.getGamePieces(gameId), move);
-    const gameOver = gameLogic.isGameOver(updatedGamePieces);
-    db.pushGamePieces(gameId, updatedGamePieces);
-    io.to(gameId).emit("updatePieces", updatedGamePieces);
-    if (gameOver) {
-      io.to(gameId).emit("gameOver", gameOver);
-      db.deleteGame(gameId);
-    } else {
-      db.switchPlayerTurn(gameId);
-      io.to(gameId).emit("updatePlayerTurn", db.getPlayerTurn(gameId));
-    }
+    db.findGameWithPlayer(socket.id).then((game) => {
+      const gameId = game.gameId;
+      const updatedGamePieces = gameLogic.movePiece(game.pieces, move);
+      const gameOver = gameLogic.isGameOver(updatedGamePieces);
+      db.pushGamePieces(gameId, updatedGamePieces);
+      io.to(gameId).emit("updatePieces", updatedGamePieces);
+      if (gameOver) {
+        io.to(gameId).emit("gameOver", gameOver);
+        db.deleteGame(gameId);
+      } else {
+        db.switchPlayerTurn(gameId).then(
+          db.getPlayerTurn(gameId).then((turn) => io.to(gameId).emit("updatePlayerTurn", turn))
+        );
+      }
+    });
   });
 
   socket.on("allPiecesPlaced", (pieces) => {
-    const gameId = findPlayerGame(socket.id);
-    const updatedGamePieces = db.getGamePieces(gameId).concat(pieces);
-    db.pushGamePieces(gameId, updatedGamePieces);
-    io.to(gameId).emit("updatePieces", updatedGamePieces);
-    db.addReadyPlayer(gameId);
-    if (db.getReadyPlayers(gameId) === 2) {
-      io.to(gameId).emit("startGame");
-      io.to(gameId).emit("updatePlayerTurn", db.getPlayerTurn(gameId));
-    }
+    db.findGameWithPlayer(socket.id).then((game) => {
+      const gameId = game.gameId;
+      const updatedGamePieces = game.pieces.concat(pieces);
+      db.pushGamePieces(gameId, updatedGamePieces).then(() => {
+        io.to(gameId).emit("updatePieces", updatedGamePieces);
+        db.addReadyPlayer(gameId).then(() =>
+          db.getReadyPlayers(gameId).then((nPlayersReady) => {
+            if (nPlayersReady === 2) {
+              io.to(gameId).emit("startGame");
+              db.getPlayerTurn(gameId).then((turn) => io.to(gameId).emit("updatePlayerTurn", turn));
+            }
+          })
+        );
+      });
+    });
   });
 
   socket.on("disconnect", () => {
-    console.log(`User (${socket.id}) disconnected from game (${findPlayerGame(socket.id)})`);
+    db.findGameWithPlayer(socket.id)
+      .then((game) => {
+        console.log(`User (${socket.id}) disconnected from game (${game.gameId})`);
+      })
+      .catch((error) => console.log(`User (${socket.id}) disconnected!`));
     // maybe free the team spot in the database
   });
 });
 
-let playersInGames = {};
-
-function joinGame(socket, gameId) {
-  playersInGames[socket.id] = gameId;
+async function joinGame(socket, gameId) {
   console.log(`User (${socket.id}) joined game (${gameId})`);
-  socket.emit("assignTeam", db.assignTeamToPlayer(gameId, socket.id));
-}
-
-function findPlayerGame(socketId) {
-  return playersInGames[socketId];
+  socket.join(gameId);
+  db.assignTeamToPlayer(gameId, socket.id).then(() =>
+    db.getPlayerTeam(gameId, socket.id).then((team) => {
+      socket.emit("assignTeam", team);
+      db.getStartingPieces(gameId).then((gamePieces) =>
+        io.to(gameId).emit("updatePieces", gamePieces)
+      );
+    })
+  );
 }
 
 // Start the server
