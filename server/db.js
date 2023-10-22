@@ -31,12 +31,11 @@ async function createNewGame(gameId) {
     gameId: gameId,
     playerIdYellow: null,
     playerIdRed: null,
-    nPlayersReady: 0,
+    nPlayersReady: 0, // potential refactor: without nPlayersReady, only with pieces
     turn: "yellow",
     pieces: [],
     gameOver: false,
   });
-  //   newGame.save();
   return await Game.create(newGame);
 }
 
@@ -95,6 +94,10 @@ async function findGameWithPlayer(playerId) {
   return await Game.findOne({ playerIdRed: playerId });
 }
 
+async function findGame(gameId) {
+    return await Game.findOne({ gameId: gameId});
+}
+
 module.exports = {
   createNewGame,
   addReadyPlayer,
@@ -106,4 +109,5 @@ module.exports = {
   switchPlayerTurn,
   getPlayerTeam,
   findGameWithPlayer,
+  findGame
 };

@@ -22,19 +22,22 @@ app.get("/game/new", (req, res) => {
 });
 
 app.get("/game/:gameId", (req, res) => {
-  // Here, serve your game HTML, perhaps passing the gameId to it somehow
   const filePath = path.join(__dirname, "../public", "index.html");
   res.sendFile(filePath);
 });
 
 io.on("connection", (socket) => {
   socket.on("joinGame", (gameId) => {
-    let room = io.sockets.adapter.rooms.get(gameId);
-
-    if (!room) db.createNewGame(gameId).then(() => joinGame(socket, gameId));
-    else if (room.size < 2) joinGame(socket, gameId);
-    else console.error(`The room is already full!`);
-    // TODO: Show pieces for players without team
+    db.findGame(gameId).then((game) => {
+      if (game === null) {
+        db.createNewGame(gameId).then(() => joinGame(socket, gameId));
+      } else if (game.playerIdYellow === null && game.playerIdRed === null) {
+        // TODO: Show pieces for players without team
+        console.error("The room is already full!");
+      } else {
+        joinGame(socket, gameId);
+      }
+    });
   });
 
   socket.on("pieceMoved", (move) => {
