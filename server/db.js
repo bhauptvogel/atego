@@ -1,10 +1,13 @@
 const mongoose = require("mongoose");
-// https://chat.openai.com/c/43c1e096-c174-4397-a10c-61da7594385a
+const dotenv = require("dotenv");
+dotenv.config();
+
 // Connection URL
-const url = "mongodb://localhost:27017/mygame";
+const localURL = "mongodb://localhost:27017/mygame";
+const atlasURI = `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@cluster0.ght2591.mongodb.net/?retryWrites=true&w=majority`;
 
 mongoose
-  .connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(atlasURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log("Connected to MongoDB!");
   })
@@ -95,7 +98,7 @@ async function findGameWithPlayer(playerId) {
 }
 
 async function findGame(gameId) {
-    return await Game.findOne({ gameId: gameId});
+  return await Game.findOne({ gameId: gameId });
 }
 
 module.exports = {
@@ -109,5 +112,5 @@ module.exports = {
   switchPlayerTurn,
   getPlayerTeam,
   findGameWithPlayer,
-  findGame
+  findGame,
 };
