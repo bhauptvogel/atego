@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
-const dotenv = require("dotenv");
-dotenv.config();
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
 
-// Connection URL
-const localURL = "mongodb://localhost:27017/mygame";
 const atlasURI = `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@cluster0.ght2591.mongodb.net/?retryWrites=true&w=majority`;
 
 mongoose
