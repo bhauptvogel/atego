@@ -1,4 +1,3 @@
-const tileSize = 128;
 const nFieldsWidth = 4;
 const nFieldsHeight = 5;
 
@@ -311,6 +310,9 @@ function visualizeEndOfGame(winningTeam) {
 function init() {
   // Global client variables
   mainStage = new createjs.Stage("gameCanvas");
+  if (mainStage.canvas.width * nFieldsHeight !== mainStage.canvas.height * nFieldsWidth)
+    throw new Error(`Game has not correct dimensions (${nFieldsWidth} x ${nFieldsHeight})`);
+  tileSize = mainStage.canvas.width / nFieldsWidth;
   heroCharacterSpace = new createjs.Stage("heroCharacterCanvas");
   villainCharacterSpace = new createjs.Stage("villainCharacterCanvas");
   loader = new createjs.LoadQueue(false);
