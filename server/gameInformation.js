@@ -103,6 +103,24 @@ function getGameIdByPlayerId(playerId) {
   return game.gameId;
 }
 
+function getAllGameIds() {
+  return allGames.map((element) => element.gameId);
+}
+
+function updatePlayerTime(gameId, difference) {
+  const game = getGameById(gameId);
+  if (game.turn === "yellow") game.yellowPlayerTime += difference;
+  else if (game.turn === "red") game.redPlayerTime += difference;
+}
+
+function getRemainingPlayerTime(gameId) {
+  const game = getGameById(gameId);
+  return {
+    yellowPlayerTime: game.yellowPlayerTime,
+    redPlayerTime: game.redPlayerTime,
+  };
+}
+
 function gameOver(gameId) {
   getGameById(gameId).gameOver = true;
   // TODO: put into database
@@ -119,8 +137,11 @@ module.exports = {
   newGame,
   gameIdExists,
   pushPieces,
+  updatePlayerTime,
+  getAllGameIds,
   getPieces,
   getPlayerTeam,
+  getRemainingPlayerTime,
   playerIsInGame,
   getGameIdByPlayerId,
   playerReady,

@@ -54,6 +54,7 @@ io.on("connection", (socket) => {
       gameInformation.switchPlayerTurn(gameId);
       const turn = gameInformation.getPlayerTurn(gameId);
       io.to(gameId).emit("updatePlayerTurn", turn);
+      io.to(gameId).emit("clockUpdate", gameInformation.getRemainingPlayerTime(gameId));
     }
   });
 
@@ -91,22 +92,18 @@ function joinGame(socket, gameId) {
   const gamePieces = gameInformation.getPieces(gameId);
   const updatedGamePieces = gameLogic.getStartingPieces(gamePieces);
   io.to(gameId).emit("updatePieces", updatedGamePieces);
+  console.log(Object.keys(io.sockets.sockets));
 }
 
-const clockTime = {
-  player1Time: 60,
-  player2Time: 60,
-};
-
 function updateClock() {
-  clockTime.player1Time--;
-  if (clockTime.player1Time < 0) clockTime.player1Time = 60;
-
-  io.emit("clockUpdate", clockTime.player1Time);
+  for (const gameId of gameInformation.getAllGameIds()) {
+    if (gameInformation.getNPlayersReady(gameId) === 2)
+      gameInformation.updatePlayerTime(gameId, -1);
+    io.to(gameId).emit("clockUpdate", gameInformation.getRemainingPlayerTime(gameId));
+  }
 }
 
 setInterval(updateClock, 1000);
-
 // Start the server
 const port = 3000;
 server.listen(port, () => {

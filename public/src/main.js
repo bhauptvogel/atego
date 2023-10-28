@@ -352,6 +352,7 @@ function connectToServer() {
   socket.on("startGame", () => (gameStarted = true));
   socket.on("newDeadPiece", (piece) => addDeadPieceToSpace(piece));
   socket.on("gameOver", (winningTeam) => visualizeEndOfGame(winningTeam));
+  socket.on("clockUpdate", (remainingPlayerTime) => updateClock(remainingPlayerTime, heroTeam, currentTurn, gameStarted));
 }
 
 function renderGame() {
