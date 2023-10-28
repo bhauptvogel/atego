@@ -35,15 +35,33 @@ function movePiece(pieces, move) {
 /**
  * @returns 'red' if yellow bomb is killed, 'yellow' if red bomb is killed, 'tie' if both miners are killed, otherwise null
  */
-function isGameOver(pieces) {
-  const yellowBomb = pieces.find((piece) => piece.id === "bomb" && piece.team === "yellow");
-  const redBomb = pieces.find((piece) => piece.id === "bomb" && piece.team === "red");
-  if (Object.keys(yellowBomb.position).length === 0) return "red";
-  if (Object.keys(redBomb.position).length === 0) return "yellow";
-  const yellowMiner = pieces.find((piece) => piece.id === "miner" && piece.team === "yellow");
-  const redMiner = pieces.find((piece) => piece.id === "miner" && piece.team === "red");
-  if (Object.keys(yellowMiner.position).length === 0 && Object.keys(redMiner.position).length === 0)
+function isGameOver(pieces, remainingPlayerTime) {
+  if (remainingPlayerTime.yellowPlayerTime <= 0) return "red";
+  if (remainingPlayerTime.redPlayerTime <= 0) return "yellow";
+
+  const yellowBombExists =
+    Object.keys(pieces.find((piece) => piece.id === "bomb" && piece.team === "yellow").position)
+      .length > 0;
+  const redBombExists =
+    Object.keys(pieces.find((piece) => piece.id === "bomb" && piece.team === "red").position)
+      .length > 0;
+  const yellowPiecesLength = pieces.filter(
+    (piece) => piece.team === "yellow" && Object.keys(piece.position).length > 0
+  ).length;
+  const redPiecesLength = pieces.filter(
+    (piece) => piece.team === "red" && Object.keys(piece.position).length > 0
+  ).length;
+  if (yellowBombExists && redBombExists && yellowPiecesLength === 1 && redPiecesLength === 1)
     return "tie";
+  if (!yellowBombExists || yellowPiecesLength <= 1) return "red";
+  if (!redBombExists || redPiecesLength <= 1) return "yellow";
+  const yellowMinerExists =
+    Object.keys(pieces.find((piece) => piece.id === "miner" && piece.team === "yellow").position)
+      .length > 0;
+  const redMinerExists =
+    Object.keys(pieces.find((piece) => piece.id === "miner" && piece.team === "red").position)
+      .length > 0;
+  if (!yellowMinerExists && !redMinerExists) return "tie";
   return null;
 }
 
