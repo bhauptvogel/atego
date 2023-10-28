@@ -75,17 +75,18 @@
     <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/src/main.js"></script>
+    <script src="/src/game-clock.js"></script>
   </head>
   <body>
     <body onload="init();">
       <div class="game-clock">
-        <div class="time player-one">
+        <div class="time player-enemy">
           <span class="timer">01:00</span>
-          <span class="label">Yellow</span>
+          <span class="label"></span>
         </div>
-        <div class="time player-two">
+        <div class="time player-hero">
           <span class="timer">01:00</span>
-          <span class="label">Red</span>
+          <span class="label"></span>
         </div>
       </div>
       <div id="gameContainer">

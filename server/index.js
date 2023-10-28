@@ -7,8 +7,9 @@ const server = http.createServer(app);
 const io = socketIO(server);
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
-const db = require("./db");
+// const db = require("./db");
 const gameLogic = require("./gameLogic");
+const gameInformation = require("./gameInformation");
 
 app.get("/", (req, res) => {
   res.redirect("/game/new");
@@ -28,75 +29,83 @@ app.get("/game/:gameId", (req, res) => {
 
 io.on("connection", (socket) => {
   socket.on("joinGame", (gameId) => {
-    db.findGame(gameId).then((game) => {
-      if (game === null) {
-        db.createNewGame(gameId).then(() => joinGame(socket, gameId));
-      } else if (game.playerIdYellow === null && game.playerIdRed === null) {
-        // TODO: Show pieces for players without team
-        console.error("The room is already full!");
-      } else {
-        joinGame(socket, gameId);
-      }
-    });
+    if (!gameInformation.gameIdExists(gameId)) {
+      gameInformation.newGame(gameId);
+      joinGame(socket, gameId);
+    } else if (gameInformation.isGameFull(gameId)) {
+      // TODO: Show pieces for players without team
+      console.error("The room is already full!");
+    } else {
+      joinGame(socket, gameId);
+    }
   });
 
   socket.on("pieceMoved", (move) => {
-    db.findGameWithPlayer(socket.id).then((game) => {
-      const gameId = game.gameId;
-      const updatedGamePieces = gameLogic.movePiece(game.pieces, move);
-      const gameOver = gameLogic.isGameOver(updatedGamePieces);
-      db.pushGamePieces(gameId, updatedGamePieces);
-      io.to(gameId).emit("updatePieces", updatedGamePieces);
-      if (gameOver) {
-        io.to(gameId).emit("gameOver", gameOver);
-        db.deleteGame(gameId);
-      } else {
-        db.switchPlayerTurn(gameId).then((turn) => io.to(gameId).emit("updatePlayerTurn", turn));
-      }
-    });
+    const gameId = gameInformation.getGameIdByPlayerId(socket.id);
+    const gamePieces = gameInformation.getPieces(gameId);
+    const updatedGamePieces = gameLogic.movePiece(gamePieces, move);
+    const gameOver = gameLogic.isGameOver(updatedGamePieces);
+    gameInformation.pushPieces(gameId, updatedGamePieces);
+    io.to(gameId).emit("updatePieces", updatedGamePieces);
+    if (gameOver) {
+      io.to(gameId).emit("gameOver", gameOver);
+      gameInformation.gameOver(gameId);
+    } else {
+      gameInformation.switchPlayerTurn(gameId);
+      const turn = gameInformation.getPlayerTurn(gameId);
+      io.to(gameId).emit("updatePlayerTurn", turn);
+    }
   });
 
   socket.on("allPiecesPlaced", (pieces) => {
-    db.findGameWithPlayer(socket.id).then((game) => {
-      const gameId = game.gameId;
-      const updatedGamePieces = game.pieces.concat(pieces);
-      db.pushGamePieces(gameId, updatedGamePieces).then(() => {
-        io.to(gameId).emit("updatePieces", updatedGamePieces);
-        db.addReadyPlayer(gameId).then(() =>
-          db.getReadyPlayers(gameId).then((nPlayersReady) => {
-            if (nPlayersReady === 2) {
-              io.to(gameId).emit("startGame");
-              io.to(gameId).emit("updatePlayerTurn", "yellow");
-            }
-          })
-        );
-      });
-    });
+    const gameId = gameInformation.getGameIdByPlayerId(socket.id);
+    const gamePieces = gameInformation.getPieces(gameId);
+    const updatedGamePieces = gamePieces.concat(pieces);
+    gameInformation.pushPieces(gameId, updatedGamePieces);
+    io.to(gameId).emit("updatePieces", updatedGamePieces);
+    gameInformation.playerReady(gameId, socket.id);
+    const nPlayersReady = gameInformation.getNPlayersReady(gameId);
+    if (nPlayersReady === 2) {
+      io.to(gameId).emit("startGame");
+      io.to(gameId).emit("updatePlayerTurn", "yellow");
+    }
   });
 
   socket.on("disconnect", () => {
-    db.findGameWithPlayer(socket.id)
-      .then((game) => {
-        console.log(`User (${socket.id}) disconnected from game (${game.gameId})`);
-      })
-      .catch((error) => console.log(`User (${socket.id}) disconnected!`));
-    // maybe free the team spot in the database
+    if (gameInformation.playerIsInGame(socket.id)) {
+      const gameId = gameInformation.getGameIdByPlayerId(socket.id);
+      console.log(`User (${socket.id}) disconnected from game (${gameId})`);
+    } else {
+      console.log(`User (${socket.id}) disconnected!`);
+    }
+    // maybe free the team spot in the gameInformation
   });
 });
 
-async function joinGame(socket, gameId) {
+function joinGame(socket, gameId) {
   console.log(`User (${socket.id}) joined game (${gameId})`);
   socket.join(gameId);
-  db.assignTeamToPlayer(gameId, socket.id).then(() =>
-    db.getPlayerTeam(gameId, socket.id).then((team) => {
-      socket.emit("assignTeam", team);
-      db.getGamePieces(gameId).then((gamePieces) => {
-        const updatedGamePieces = gameLogic.getStartingPieces(gamePieces);
-        io.to(gameId).emit("updatePieces", updatedGamePieces);
-      });
-    })
-  );
+  gameInformation.assignPlayerToTeam(gameId, socket.id);
+  const playerTeam = gameInformation.getPlayerTeam(gameId, socket.id);
+  socket.emit("assignTeam", playerTeam);
+  const gamePieces = gameInformation.getPieces(gameId);
+  const updatedGamePieces = gameLogic.getStartingPieces(gamePieces);
+  io.to(gameId).emit("updatePieces", updatedGamePieces);
 }
+
+const clockTime = {
+  player1Time: 60,
+  player2Time: 60,
+};
+
+function updateClock() {
+  clockTime.player1Time--;
+  if (clockTime.player1Time < 0) clockTime.player1Time = 60;
+
+  io.emit("clockUpdate", clockTime.player1Time);
+}
+
+setInterval(updateClock, 1000);
 
 // Start the server
 const port = 3000;
