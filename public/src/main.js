@@ -348,11 +348,14 @@ function connectToServer() {
     heroTeam = assignedTeam;
     visualizeTeamArea();
     drawWaitingForOpponent();
+    teamAssignClock(assignedTeam);
   });
   socket.on("startGame", () => (gameStarted = true));
   socket.on("newDeadPiece", (piece) => addDeadPieceToSpace(piece));
   socket.on("gameOver", (winningTeam) => visualizeEndOfGame(winningTeam));
-  socket.on("clockUpdate", (remainingPlayerTime) => updateClock(remainingPlayerTime, heroTeam, currentTurn, gameStarted));
+  socket.on("clockUpdate", (remainingPlayerTime) =>
+    updateClock(remainingPlayerTime, heroTeam, currentTurn, gameStarted)
+  );
 }
 
 function renderGame() {

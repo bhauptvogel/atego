@@ -1,3 +1,17 @@
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function teamAssignClock(heroTeam) {
+  const playerHero = document.querySelector(".player-hero");
+  playerHero.querySelector("span:last-child").textContent = capitalizeFirstLetter(String(heroTeam));
+  const enemyTeam = heroTeam === "yellow" ? "red" : "yellow";
+  const playerEnemy = document.querySelector(".player-enemy");
+  playerEnemy.querySelector("span:last-child").textContent = capitalizeFirstLetter(
+    String(enemyTeam)
+  );
+}
+
 function updateClock(remainingPlayerTime, heroTeam, currentTurn, gameStarted) {
   if (gameStarted === true) {
     const heroTime =
