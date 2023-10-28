@@ -44,7 +44,8 @@ io.on("connection", (socket) => {
     const gameId = gameInformation.getGameIdByPlayerId(socket.id);
     const gamePieces = gameInformation.getPieces(gameId);
     const updatedGamePieces = gameLogic.movePiece(gamePieces, move);
-    const gameOver = gameLogic.isGameOver(updatedGamePieces);
+    const remainingPlayerTime = gameInformation.getRemainingPlayerTime(gameId);
+    const gameOver = gameLogic.isGameOver(updatedGamePieces, remainingPlayerTime);
     gameInformation.pushPieces(gameId, updatedGamePieces);
     io.to(gameId).emit("updatePieces", updatedGamePieces);
     if (gameOver) {
@@ -92,14 +93,21 @@ function joinGame(socket, gameId) {
   const gamePieces = gameInformation.getPieces(gameId);
   const updatedGamePieces = gameLogic.getStartingPieces(gamePieces);
   io.to(gameId).emit("updatePieces", updatedGamePieces);
-  console.log(Object.keys(io.sockets.sockets));
 }
 
 function updateClock() {
   for (const gameId of gameInformation.getAllGameIds()) {
-    if (gameInformation.getNPlayersReady(gameId) === 2)
+    if (gameInformation.getNPlayersReady(gameId) === 2) {
       gameInformation.updatePlayerTime(gameId, -1);
-    io.to(gameId).emit("clockUpdate", gameInformation.getRemainingPlayerTime(gameId));
+      const remainingPlayerTime = gameInformation.getRemainingPlayerTime(gameId);
+      io.to(gameId).emit("clockUpdate", remainingPlayerTime);
+      const gamePieces = gameInformation.getPieces(gameId);
+      const gameOver = gameLogic.isGameOver(gamePieces, remainingPlayerTime);
+      if (gameOver) {
+        io.to(gameId).emit("gameOver", gameOver);
+        gameInformation.gameOver(gameId);
+      }
+    }
   }
 }
 

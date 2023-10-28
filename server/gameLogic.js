@@ -35,7 +35,10 @@ function movePiece(pieces, move) {
 /**
  * @returns 'red' if yellow bomb is killed, 'yellow' if red bomb is killed, 'tie' if both miners are killed, otherwise null
  */
-function isGameOver(pieces) {
+function isGameOver(pieces, remainingPlayerTime) {
+  if (remainingPlayerTime.yellowPlayerTime <= 0) return "red";
+  if (remainingPlayerTime.redPlayerTime <= 0) return "yellow";
+
   const yellowBombExists =
     Object.keys(pieces.find((piece) => piece.id === "bomb" && piece.team === "yellow").position)
       .length > 0;
