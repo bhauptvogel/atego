@@ -9,7 +9,7 @@ const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 // const db = require("./db");
 const gameLogic = require("./gameLogic");
-const gameInformation = require("./gameInformation");
+const games = require("./games");
 
 app.get("/", (req, res) => {
   res.redirect("/game/new");
@@ -29,10 +29,10 @@ app.get("/game/:gameId", (req, res) => {
 
 io.on("connection", (socket) => {
   socket.on("joinGame", (gameId) => {
-    if (!gameInformation.gameIdExists(gameId)) {
-      gameInformation.newGame(gameId);
+    if (!games.gameIdExists(gameId)) {
+      games.newGame(gameId);
       joinGame(socket, gameId);
-    } else if (gameInformation.isGameFull(gameId)) {
+    } else if (games.isGameFull(gameId)) {
       // TODO: Show pieces for players without team
       console.error("The room is already full!");
     } else {
@@ -41,32 +41,32 @@ io.on("connection", (socket) => {
   });
 
   socket.on("pieceMoved", (move) => {
-    const gameId = gameInformation.getGameIdByPlayerId(socket.id);
-    const gamePieces = gameInformation.getPieces(gameId);
+    const gameId = games.getGameIdByPlayerId(socket.id);
+    const gamePieces = games.getPieces(gameId);
     const updatedGamePieces = gameLogic.movePiece(gamePieces, move);
-    const remainingPlayerTime = gameInformation.getRemainingPlayerTime(gameId);
+    const remainingPlayerTime = games.getRemainingPlayerTime(gameId);
     const gameOver = gameLogic.isGameOver(updatedGamePieces, remainingPlayerTime);
-    gameInformation.pushPieces(gameId, updatedGamePieces);
+    games.pushPieces(gameId, updatedGamePieces);
     io.to(gameId).emit("updatePieces", updatedGamePieces);
     if (gameOver) {
       io.to(gameId).emit("gameOver", gameOver);
-      gameInformation.gameOver(gameId);
+      games.gameOver(gameId);
     } else {
-      gameInformation.switchPlayerTurn(gameId);
-      const turn = gameInformation.getPlayerTurn(gameId);
+      games.switchPlayerTurn(gameId);
+      const turn = games.getPlayerTurn(gameId);
       io.to(gameId).emit("updatePlayerTurn", turn);
-      io.to(gameId).emit("clockUpdate", gameInformation.getRemainingPlayerTime(gameId));
+      io.to(gameId).emit("clockUpdate", games.getRemainingPlayerTime(gameId));
     }
   });
 
   socket.on("allPiecesPlaced", (pieces) => {
-    const gameId = gameInformation.getGameIdByPlayerId(socket.id);
-    const gamePieces = gameInformation.getPieces(gameId);
+    const gameId = games.getGameIdByPlayerId(socket.id);
+    const gamePieces = games.getPieces(gameId);
     const updatedGamePieces = gamePieces.concat(pieces);
-    gameInformation.pushPieces(gameId, updatedGamePieces);
+    games.pushPieces(gameId, updatedGamePieces);
     io.to(gameId).emit("updatePieces", updatedGamePieces);
-    gameInformation.playerReady(gameId, socket.id);
-    const nPlayersReady = gameInformation.getNPlayersReady(gameId);
+    games.playerReady(gameId, socket.id);
+    const nPlayersReady = games.getNPlayersReady(gameId);
     if (nPlayersReady === 2) {
       io.to(gameId).emit("startGame");
       io.to(gameId).emit("updatePlayerTurn", "yellow");
@@ -74,38 +74,38 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    if (gameInformation.playerIsInGame(socket.id)) {
-      const gameId = gameInformation.getGameIdByPlayerId(socket.id);
+    if (games.playerIsInGame(socket.id)) {
+      const gameId = games.getGameIdByPlayerId(socket.id);
       console.log(`User (${socket.id}) disconnected from game (${gameId})`);
     } else {
       console.log(`User (${socket.id}) disconnected!`);
     }
-    // maybe free the team spot in the gameInformation
+    // maybe free the team spot in the games
   });
 });
 
 function joinGame(socket, gameId) {
   console.log(`User (${socket.id}) joined game (${gameId})`);
   socket.join(gameId);
-  gameInformation.assignPlayerToTeam(gameId, socket.id);
-  const playerTeam = gameInformation.getPlayerTeam(gameId, socket.id);
+  games.assignPlayerToTeam(gameId, socket.id);
+  const playerTeam = games.getPlayerTeam(gameId, socket.id);
   socket.emit("assignTeam", playerTeam);
-  const gamePieces = gameInformation.getPieces(gameId);
+  const gamePieces = games.getPieces(gameId);
   const updatedGamePieces = gameLogic.getStartingPieces(gamePieces);
   io.to(gameId).emit("updatePieces", updatedGamePieces);
 }
 
 function updateClock() {
-  for (const gameId of gameInformation.getAllGameIds()) {
-    if (gameInformation.getNPlayersReady(gameId) === 2) {
-      gameInformation.updatePlayerTime(gameId, -1);
-      const remainingPlayerTime = gameInformation.getRemainingPlayerTime(gameId);
+  for (const gameId of games.getAllGameIds()) {
+    if (games.getNPlayersReady(gameId) === 2) {
+      games.updatePlayerTime(gameId, -1);
+      const remainingPlayerTime = games.getRemainingPlayerTime(gameId);
       io.to(gameId).emit("clockUpdate", remainingPlayerTime);
-      const gamePieces = gameInformation.getPieces(gameId);
+      const gamePieces = games.getPieces(gameId);
       const gameOver = gameLogic.isGameOver(gamePieces, remainingPlayerTime);
       if (gameOver) {
         io.to(gameId).emit("gameOver", gameOver);
-        gameInformation.gameOver(gameId);
+        games.gameOver(gameId);
       }
     }
   }
