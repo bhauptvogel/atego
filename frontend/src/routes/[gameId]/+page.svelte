@@ -1,8 +1,12 @@
 <script lang="ts">
-  import type { PageData } from "./$types";
+  import Board from "$lib/Board.svelte";
   import { page } from "$app/stores";
+  import io from "socket.io-client";
 
-  export let data: PageData;
+  const socket = io("http://localhost:8000/");
+  socket.on("connect", () => {
+    console.log(`Successfully connected to the server!`);
+  });
 </script>
 
-{$page.params.gameId}
+<Board />
