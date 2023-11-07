@@ -30,7 +30,11 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket: Socket) => {
-  console.log(`New connection!: ${socket.id}`);
+  console.log(`New connection: Socket ${socket.id}`);
+  socket.on("joinGame", (gameId) => {
+    // TODO: 1. look if game exists, 2. create socket.io room
+    console.log(`Player ${socket.id} joined game ${gameId}`)
+  });
   socket.on("disconnect", () => {
     console.log(`Disconnected socket ${socket.id}`);
   });
