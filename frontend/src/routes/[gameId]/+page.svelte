@@ -15,6 +15,20 @@
     currentTurn: string;
   }
 
+  interface Piece {
+    id: string;
+    field: Field;
+    team: string;
+    hasFought: boolean;
+    dead: boolean;
+    active: boolean;
+  }
+
+  interface Move {
+    from: Field;
+    to: Field;
+  }
+
   const gameId: string = $page.params.gameId;
   const nFieldsWidth: number = 4;
   const nFieldsHeight: number = 5;
@@ -35,6 +49,10 @@
     gameOver: "",
     currentTurn: "",
   };
+
+//   const images = {
+//     [id: 'assassin', team: 'red', image: new createjs.Bitmap('/piece/assassin-red.png')]
+//   }
 
   onMount(() => {
     mainStage = new createjs.Stage("gameCanvas");
@@ -75,8 +93,12 @@
   }
 
   function addDeadPieceToSpace(characterID: string, team: string): void {
-    const deadPiece: createjs.Container = new createjs.Container();
-    deadPiece.addChild(new createjs.Bitmap(`/pieces/${characterID}-${team}`));
+    const deadPiece: GamePiece = new GamePiece(
+      characterID,
+      { fieldX: -1, fieldY: -1 },
+      team,
+      false
+    );
     const space: createjs.Stage =
       team === state.heroTeam ? heroCharacterSpace : villainCharacterSpace;
     deadPiece.x = 16 + space.children.length * 96;
@@ -84,28 +106,24 @@
     space.addChild(deadPiece);
   }
 
-  function updatePieces(pieces: any[]): void {
+  function updatePieces(pieces: Piece[]): void {
     if (state.gameStarted == true) {
       pieceContainer.removeAllChildren();
       heroCharacterSpace.removeAllChildren();
       villainCharacterSpace.removeAllChildren();
       possibleMovesContainer.removeAllChildren();
     } else if (
-      pieces.filter(
-        (piece) => piece.team !== state.heroTeam && Object.keys(piece.position).length > 0
-      ).length > 0
+      pieces.filter((piece) => piece.team !== state.heroTeam && piece.dead == false).length > 0
     ) {
       villainCharacterSpace.removeChild(textWaitingforOpponent);
     }
     const heroCharacterSpaceIsEmpty: boolean = heroCharacterSpace.children.length === 0;
     pieces.forEach((piece) => {
-      if (Object.keys(piece.position).length !== 0)
-        pieceContainer.addChild(
-          new GamePiece(piece.id, piece.position, piece.team, piece.hasFought)
-        );
+      if (piece.active == true)
+        pieceContainer.addChild(new GamePiece(piece.id, piece.field, piece.team, piece.hasFought));
       else if (
-        (piece.team !== state.heroTeam && state.gameStarted) ||
-        (piece.team === state.heroTeam && heroCharacterSpaceIsEmpty)
+        (piece.dead === true && state.gameStarted == true) ||
+        (state.gameStarted == false && piece.team === state.heroTeam && heroCharacterSpaceIsEmpty)
       )
         addDeadPieceToSpace(piece.id, piece.team);
     });
@@ -250,7 +268,8 @@
 
     // Placing
     if (state.gameStarted == false) {
-      const selectedPiecesOfHeroCharacterSpace = getSelectedPiecesOfHeroCharacterSpace();
+      const selectedPiecesOfHeroCharacterSpace: GamePiece | undefined =
+        getSelectedPiecesOfHeroCharacterSpace();
       if (selectedPiecesOfHeroCharacterSpace != undefined) {
         let fieldIsOccupied: boolean = false;
         for (const piece of pieceContainer.children) {
@@ -275,6 +294,7 @@
             )
           );
           heroCharacterSpace.removeChild(selectedPiecesOfHeroCharacterSpace);
+          heroCharacterSpace.update();
           deselectAllPiecesOfHeroCharacterSpace();
           mainStage.update();
           if (heroCharacterSpace.children.length == 0) allPiecesPlaced();
@@ -310,6 +330,7 @@
 
   function clickedOnClientCharacterSpace(evt: createjs.MouseEvent): void {
     if (state.gameStarted == false) {
+      deselectAllPiecesOfHeroCharacterSpace();
       for (const unplacedPiece of heroCharacterSpace.children) {
         if (
           unplacedPiece instanceof GamePiece &&
@@ -382,8 +403,8 @@
       this.updateXY();
 
       if (this.team == state.heroTeam || hasFought == true)
-        this.image = new createjs.Bitmap(`/pieces/${this.characterId}-${this.team}`);
-      else this.image = new createjs.Bitmap(`/pieces/unknown-${this.team}`);
+        this.image = new createjs.Bitmap(`/pieces/${this.characterId}-${this.team}.png`);
+      else this.image = new createjs.Bitmap(`/pieces/unknown-${this.team}.png`);
 
       this.addChild(this.image);
     }
@@ -456,6 +477,21 @@
   }
 </script>
 
-<canvas id="villainCharacterCanvas" width="768" height="96" />
-<canvas id="gameCanvas" width="512" height="640" />
-<canvas id="heroCharacterCanvas" width="768" height="96" />
+<div id="gameContainer">
+  <canvas id="villainCharacterCanvas" width="768" height="96" />
+  <canvas id="gameCanvas" width="512" height="640" />
+  <canvas id="heroCharacterCanvas" width="768" height="96" />
+</div>
+
+<style>
+  canvas {
+    margin-bottom: 40px;
+  }
+
+  #gameContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
