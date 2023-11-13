@@ -32,6 +32,7 @@
   const gameId: string = $page.params.gameId;
   const nFieldsWidth: number = 4;
   const nFieldsHeight: number = 5;
+  let piecesBitmaps: any;
   let mainStageWidth: number;
   let mainStageHeight: number;
   let socket: Socket;
@@ -49,10 +50,7 @@
     gameOver: "",
     currentTurn: "",
   };
-
-//   const images = {
-//     [id: 'assassin', team: 'red', image: new createjs.Bitmap('/piece/assassin-red.png')]
-//   }
+  loadImages();
 
   onMount(() => {
     mainStage = new createjs.Stage("gameCanvas");
@@ -77,6 +75,19 @@
     mainStage.update();
     connectToServer();
   });
+
+  function loadImages(): void {
+    piecesBitmaps = ["assassin", "bomb", "killer", "miner", "mr_x", "runner", "spy", "unknown"]
+      .map((element) => [
+        {
+          id: element,
+          team: "yellow",
+          bitmap: new createjs.Bitmap(`pieces/${element}-yellow.png`),
+        },
+        { id: element, team: "red", bitmap: new createjs.Bitmap(`pieces/${element}-red.png`) },
+      ])
+      .flat();
+  }
 
   function connectToServer(): void {
     socket = io("http://localhost:8000/");
@@ -117,13 +128,12 @@
     ) {
       villainCharacterSpace.removeChild(textWaitingforOpponent);
     }
-    const heroCharacterSpaceIsEmpty: boolean = heroCharacterSpace.children.length === 0;
     pieces.forEach((piece) => {
       if (piece.active == true)
         pieceContainer.addChild(new GamePiece(piece.id, piece.field, piece.team, piece.hasFought));
       else if (
         (piece.dead === true && state.gameStarted == true) ||
-        (state.gameStarted == false && piece.team === state.heroTeam && heroCharacterSpaceIsEmpty)
+        (state.gameStarted == false && piece.team === state.heroTeam && piece.active == false)
       )
         addDeadPieceToSpace(piece.id, piece.team);
     });
@@ -206,13 +216,17 @@
     const packagePieces = [];
 
     for (const piece of pieceContainer.children) {
-      if (piece instanceof GamePiece && piece.team == state.heroTeam)
-        packagePieces.push({
+      if (piece instanceof GamePiece && piece.team == state.heroTeam) {
+        const packagedPiece: Piece = {
           id: piece.characterId,
-          position: piece.field,
+          field: piece.field,
           team: piece.team,
           hasFought: false,
-        });
+          dead: false,
+          active: true,
+        };
+        packagePieces.push(packagedPiece);
+      }
     }
     socket.emit("allPiecesPlaced", packagePieces);
     mainStage.removeChild(heroArea);
@@ -402,9 +416,14 @@
       this.field = field;
       this.updateXY();
 
-      if (this.team == state.heroTeam || hasFought == true)
-        this.image = new createjs.Bitmap(`/pieces/${this.characterId}-${this.team}.png`);
-      else this.image = new createjs.Bitmap(`/pieces/unknown-${this.team}.png`);
+      let imageId: string = characterId;
+      if (!(this.team == state.heroTeam || hasFought == true)) imageId = "unknown";
+
+      const image = piecesBitmaps.find(
+        (element: any) => element.team == this.team && element.id == imageId
+      );
+      if (image === undefined) throw new Error("Image not found!");
+      this.image = image.bitmap.clone();
 
       this.addChild(this.image);
     }
