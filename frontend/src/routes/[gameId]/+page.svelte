@@ -104,10 +104,11 @@
   }
 
   function connectToServer(): void {
+    console.log("connceting to server...");
     socket = io("http://localhost:8000/");
     socket.emit("joinGame", gameId);
 
-    // socket.on("connect", () => console.log(`Successfully connected to the server!`));
+    socket.on("connect", () => console.log(`Successfully connected to the server!`));
     socket.on("updatePieces", (pieces) => updatePieces(pieces));
     socket.on("updatePlayerTurn", (updatedTurn: string) => (state.currentTurn = updatedTurn));
     socket.on("assignTeam", (assignedTeam: string) => assignTeam(assignedTeam));
@@ -118,12 +119,7 @@
   }
 
   function addDeadPieceToSpace(characterID: string, team: string): void {
-    const deadPiece: GamePiece = new GamePiece(
-      characterID,
-      { fieldX: -1, fieldY: -1 },
-      team,
-      false
-    );
+    const deadPiece: GamePiece = new GamePiece(characterID, { fieldX: -1, fieldY: -1 }, team, true);
     const space: createjs.Stage =
       team === state.heroTeam ? heroCharacterSpace : villainCharacterSpace;
     deadPiece.x = 16 + space.children.length * 96;
@@ -132,6 +128,7 @@
   }
 
   function updatePieces(pieces: Piece[]): void {
+    console.log("updatePieces");
     if (state.gameStarted == true) {
       pieceContainer.removeAllChildren();
       heroCharacterSpace.removeAllChildren();
@@ -142,18 +139,23 @@
     ) {
       villainCharacterSpace.removeChild(textWaitingforOpponent);
     }
+    const heroCharacterSpaceIsEmpty = heroCharacterSpace.children.length === 0;
     pieces.forEach((piece) => {
-      if (piece.active == true)
+      if (piece.active == true && piece.dead === false)
         pieceContainer.addChild(new GamePiece(piece.id, piece.field, piece.team, piece.hasFought));
       else if (
         (piece.dead === true && state.gameStarted == true) ||
-        (state.gameStarted == false && piece.team === state.heroTeam && piece.active == false)
+        (state.gameStarted == false &&
+          piece.team === state.heroTeam &&
+          piece.active == false &&
+          heroCharacterSpaceIsEmpty)
       )
         addDeadPieceToSpace(piece.id, piece.team);
     });
     mainStage.update();
     heroCharacterSpace.update();
     villainCharacterSpace.update();
+    console.log(pieceContainer.children.length);
   }
 
   function assignTeam(assignedTeam: string): void {
@@ -227,6 +229,7 @@
   }
 
   function allPiecesPlaced(): void {
+    console.log("allPiecesPlaced");
     const packagePieces = [];
 
     for (const piece of pieceContainer.children) {
@@ -261,7 +264,7 @@
       if (
         piece instanceof GamePiece &&
         piece.field.fieldX == field.fieldX &&
-        piece.field.fieldX == field.fieldX &&
+        piece.field.fieldY == field.fieldY &&
         state.heroTeam == piece.team
       ) {
         piece.isSelected = true;
@@ -276,7 +279,7 @@
     for (const possibleMove of possibleMovesList) {
       const circle: createjs.Shape = new createjs.Shape();
       const radius: number = 10;
-      const x: number = flipFieldYIfRed(possibleMove.fieldX) * tileSize + tileSize / 2;
+      const x: number = flipFieldXIfRed(possibleMove.fieldX) * tileSize + tileSize / 2;
       const y: number = flipFieldYIfRed(possibleMove.fieldY) * tileSize + tileSize / 2;
       const color: string = "#646669";
       if (fieldOccupiedByTeam(possibleMove) !== "") circle.graphics.beginFill(color);
@@ -290,7 +293,7 @@
     if (state.heroTeam == "" || state.gameOver != "") return;
 
     const clickedField: Field = {
-      fieldX: flipfieldXIfRed(Math.floor(evt.stageX / tileSize)),
+      fieldX: flipFieldXIfRed(Math.floor(evt.stageX / tileSize)),
       fieldY: flipFieldYIfRed(Math.floor(evt.stageY / tileSize)),
     };
 
@@ -341,8 +344,8 @@
             ) !== undefined
         ) {
           socket.emit("pieceMoved", {
-            from: { x: piece.field.fieldX, y: piece.field.fieldY },
-            to: { x: clickedField.fieldX, y: clickedField.fieldY },
+            from: piece.field,
+            to: clickedField,
           });
           piece.field = clickedField;
           piece.updateXY();
@@ -384,7 +387,7 @@
     return "";
   }
 
-  function flipfieldXIfRed(x: number): number {
+  function flipFieldXIfRed(x: number): number {
     if (state.heroTeam != "red") return x;
     else return nFieldsWidth - 1 - x;
   }
@@ -431,7 +434,7 @@
       this.updateXY();
 
       let imageId: string = characterId;
-      if (!(this.team == state.heroTeam || hasFought == true)) imageId = "unknown";
+      if (this.team !== state.heroTeam && hasFought == false) imageId = "unknown";
 
       const image = piecesManifest.find(
         (element: any) => element.team == this.team && element.id == imageId
@@ -443,7 +446,7 @@
     }
 
     updateXY(): void {
-      this.x = flipfieldXIfRed(this.field.fieldX) * tileSize + tileSize / 4;
+      this.x = flipFieldXIfRed(this.field.fieldX) * tileSize + tileSize / 4;
       this.y = flipFieldYIfRed(this.field.fieldY) * tileSize + tileSize / 4;
     }
 

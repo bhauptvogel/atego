@@ -77,13 +77,14 @@ io.on("connection", (socket: Socket) => {
     const gameId: string = games.getGameIdByPlayerId(socket.id);
     const gamePieces: Piece[] = games.getPieces(gameId);
     const updatedGamePieces: Piece[] = pieces.concat(gamePieces);
-    games.pushPieces(gameId, updatedGamePieces);
-    io.to(gameId).emit("updatePieces", updatedGamePieces);
     games.playerReady(gameId, socket.id);
     if (games.allPlayersReady(gameId)) {
+      console.log("START GAME!");
       io.to(gameId).emit("startGame");
       io.to(gameId).emit("updatePlayerTurn", "yellow");
     }
+    games.pushPieces(gameId, updatedGamePieces);
+    io.to(gameId).emit("updatePieces", updatedGamePieces);
   });
 
   socket.on("disconnect", () => {

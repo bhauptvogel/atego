@@ -29,7 +29,8 @@ export function movePiece(pieces: Piece[], move: Move) {
           targetFieldPiece.dead = true;
         targetFieldPiece.hasFought = true;
       }
-      if (piece.dead == false) piece.field = move.to;
+      if (piece.dead == true) piece.field = { fieldX: -1, fieldY: -1 };
+      else piece.field = move.to;
       return pieces;
     }
   }
