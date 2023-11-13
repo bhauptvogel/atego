@@ -51,12 +51,9 @@ export class GameService {
     else throw new Error(`Player ${playerId} is not assigned to a team!`);
   }
 
-  getNPlayersReady(gameId: string): number {
-    let count: number = 0;
+  allPlayersReady(gameId: string): boolean {
     const game: Game = this.getGameById(gameId);
-    if (game.yellowPlayerReady) count++;
-    if (game.redPlayerReady) count++;
-    return count;
+    return game.yellowPlayerReady && game.redPlayerReady
   }
 
   isGameFull(gameId: string): boolean {

@@ -32,7 +32,7 @@
   const gameId: string = $page.params.gameId;
   const nFieldsWidth: number = 4;
   const nFieldsHeight: number = 5;
-  let piecesBitmaps: any;
+  let piecesManifest: { id: string; team: string; bitmap: createjs.Bitmap }[];
   let mainStageWidth: number;
   let mainStageHeight: number;
   let socket: Socket;
@@ -50,7 +50,6 @@
     gameOver: "",
     currentTurn: "",
   };
-  loadImages();
 
   onMount(() => {
     mainStage = new createjs.Stage("gameCanvas");
@@ -63,6 +62,34 @@
     villainCharacterSpace = new createjs.Stage("villainCharacterCanvas");
     pieceContainer = new createjs.Container();
     possibleMovesContainer = new createjs.Container();
+    loadImages();
+  });
+
+  function loadImages(): void {
+    piecesManifest = ["assassin", "bomb", "killer", "miner", "mr_x", "runner", "spy", "unknown"]
+      .map((element) => [
+        {
+          id: element,
+          team: "yellow",
+          bitmap: new createjs.Bitmap(`pieces/${element}-yellow.png`),
+        },
+        { id: element, team: "red", bitmap: new createjs.Bitmap(`pieces/${element}-red.png`) },
+      ])
+      .flat();
+    piecesManifest.forEach((element: any) => {
+      element.bitmap.image.onload = handleLoad;
+    });
+  }
+
+  let loadedImages: number = 0;
+  function handleLoad(event: any): void {
+    loadedImages += 1;
+    if (loadedImages == piecesManifest.length) {
+      allImagesLoaded();
+    }
+  }
+
+  function allImagesLoaded(): void {
     drawGameField();
     mainStage.addChild(pieceContainer);
     mainStage.addChild(possibleMovesContainer);
@@ -74,26 +101,13 @@
     });
     mainStage.update();
     connectToServer();
-  });
-
-  function loadImages(): void {
-    piecesBitmaps = ["assassin", "bomb", "killer", "miner", "mr_x", "runner", "spy", "unknown"]
-      .map((element) => [
-        {
-          id: element,
-          team: "yellow",
-          bitmap: new createjs.Bitmap(`pieces/${element}-yellow.png`),
-        },
-        { id: element, team: "red", bitmap: new createjs.Bitmap(`pieces/${element}-red.png`) },
-      ])
-      .flat();
   }
 
   function connectToServer(): void {
     socket = io("http://localhost:8000/");
     socket.emit("joinGame", gameId);
 
-    socket.on("connect", () => console.log(`Successfully connected to the server!`));
+    // socket.on("connect", () => console.log(`Successfully connected to the server!`));
     socket.on("updatePieces", (pieces) => updatePieces(pieces));
     socket.on("updatePlayerTurn", (updatedTurn: string) => (state.currentTurn = updatedTurn));
     socket.on("assignTeam", (assignedTeam: string) => assignTeam(assignedTeam));
@@ -308,10 +322,10 @@
             )
           );
           heroCharacterSpace.removeChild(selectedPiecesOfHeroCharacterSpace);
+          if (heroCharacterSpace.children.length == 0) allPiecesPlaced();
           heroCharacterSpace.update();
           deselectAllPiecesOfHeroCharacterSpace();
           mainStage.update();
-          if (heroCharacterSpace.children.length == 0) allPiecesPlaced();
         }
       }
     }
@@ -419,7 +433,7 @@
       let imageId: string = characterId;
       if (!(this.team == state.heroTeam || hasFought == true)) imageId = "unknown";
 
-      const image = piecesBitmaps.find(
+      const image = piecesManifest.find(
         (element: any) => element.team == this.team && element.id == imageId
       );
       if (image === undefined) throw new Error("Image not found!");

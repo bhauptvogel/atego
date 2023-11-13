@@ -80,7 +80,7 @@ io.on("connection", (socket: Socket) => {
     games.pushPieces(gameId, updatedGamePieces);
     io.to(gameId).emit("updatePieces", updatedGamePieces);
     games.playerReady(gameId, socket.id);
-    if (games.getNPlayersReady(gameId) == 2) {
+    if (games.allPlayersReady(gameId)) {
       io.to(gameId).emit("startGame");
       io.to(gameId).emit("updatePlayerTurn", "yellow");
     }
