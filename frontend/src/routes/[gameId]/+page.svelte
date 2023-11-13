@@ -20,7 +20,7 @@
     field: Field;
     team: string;
     hasFought: boolean;
-    dead: boolean;
+    alive: boolean;
     active: boolean;
   }
 
@@ -104,7 +104,6 @@
   }
 
   function connectToServer(): void {
-    console.log("connceting to server...");
     socket = io("http://localhost:8000/");
     socket.emit("joinGame", gameId);
 
@@ -119,7 +118,7 @@
   }
 
   function addDeadPieceToSpace(characterID: string, team: string): void {
-    const deadPiece: GamePiece = new GamePiece(characterID, { fieldX: -1, fieldY: -1 }, team, true);
+    const deadPiece: GamePiece = new GamePiece(characterID, { fieldX: -1, fieldY: -1 }, team, false);
     const space: createjs.Stage =
       team === state.heroTeam ? heroCharacterSpace : villainCharacterSpace;
     deadPiece.x = 16 + space.children.length * 96;
@@ -128,23 +127,22 @@
   }
 
   function updatePieces(pieces: Piece[]): void {
-    console.log("updatePieces");
     if (state.gameStarted == true) {
       pieceContainer.removeAllChildren();
       heroCharacterSpace.removeAllChildren();
       villainCharacterSpace.removeAllChildren();
       possibleMovesContainer.removeAllChildren();
     } else if (
-      pieces.filter((piece) => piece.team !== state.heroTeam && piece.dead == false).length > 0
+      pieces.filter((piece) => piece.team !== state.heroTeam && piece.alive == true).length > 0
     ) {
       villainCharacterSpace.removeChild(textWaitingforOpponent);
     }
     const heroCharacterSpaceIsEmpty = heroCharacterSpace.children.length === 0;
     pieces.forEach((piece) => {
-      if (piece.active == true && piece.dead === false)
+      if (piece.active == true && piece.alive === true)
         pieceContainer.addChild(new GamePiece(piece.id, piece.field, piece.team, piece.hasFought));
       else if (
-        (piece.dead === true && state.gameStarted == true) ||
+        (state.gameStarted == true && piece.alive === false) ||
         (state.gameStarted == false &&
           piece.team === state.heroTeam &&
           piece.active == false &&
@@ -155,7 +153,6 @@
     mainStage.update();
     heroCharacterSpace.update();
     villainCharacterSpace.update();
-    console.log(pieceContainer.children.length);
   }
 
   function assignTeam(assignedTeam: string): void {
@@ -229,7 +226,6 @@
   }
 
   function allPiecesPlaced(): void {
-    console.log("allPiecesPlaced");
     const packagePieces = [];
 
     for (const piece of pieceContainer.children) {
@@ -239,7 +235,7 @@
           field: piece.field,
           team: piece.team,
           hasFought: false,
-          dead: false,
+          alive: true,
           active: true,
         };
         packagePieces.push(packagedPiece);

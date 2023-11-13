@@ -8,7 +8,7 @@ export interface Piece {
   field: Field;
   team: string;
   hasFought: boolean;
-  dead: boolean;
+  alive: boolean;
   active: boolean;
 }
 

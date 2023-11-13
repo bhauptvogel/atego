@@ -62,7 +62,7 @@ io.on("connection", (socket: Socket) => {
     );
     games.pushPieces(gameId, updatedGamePieces);
     io.to(gameId).emit("updatePieces", updatedGamePieces);
-    if (gameOver == null) {
+    if (gameOver !== null) {
       io.to(gameId).emit("gameOver", gameOver);
       games.gameOver(gameId);
     } else {
@@ -79,7 +79,6 @@ io.on("connection", (socket: Socket) => {
     const updatedGamePieces: Piece[] = pieces.concat(gamePieces);
     games.playerReady(gameId, socket.id);
     if (games.allPlayersReady(gameId)) {
-      console.log("START GAME!");
       io.to(gameId).emit("startGame");
       io.to(gameId).emit("updatePlayerTurn", "yellow");
     }

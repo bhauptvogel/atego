@@ -9,7 +9,9 @@ export function movePiece(pieces: Piece[], move: Move) {
       // Fighting
       const targetFieldPiece: Piece | undefined = pieces.find(
         (targetPiece) =>
-          targetPiece.field.fieldX == move.to.fieldX && targetPiece.field.fieldY === move.to.fieldY
+          targetPiece.alive == true &&
+          targetPiece.field.fieldX == move.to.fieldX &&
+          targetPiece.field.fieldY === move.to.fieldY
       );
       if (targetFieldPiece !== undefined) {
         if (targetFieldPiece.team === piece.team)
@@ -22,15 +24,21 @@ export function movePiece(pieces: Piece[], move: Move) {
         );
         if (movingPieceCharacter === undefined || targetPieceCharacter === undefined)
           throw new Error("Character that is trying to move or that is attacked it not defined!");
-        if (targetPieceCharacter.beats.includes(movingPieceCharacter.n)) piece.dead = true;
-        piece.hasFought = true;
 
-        if (movingPieceCharacter.beats.includes(targetPieceCharacter.n))
-          targetFieldPiece.dead = true;
+        if (targetPieceCharacter.beats.includes(movingPieceCharacter.n)) {
+          piece.alive = false;
+          piece.field = { fieldX: -1, fieldY: -1 };
+        }
+
+        if (movingPieceCharacter.beats.includes(targetPieceCharacter.n)) {
+          targetFieldPiece.field = { fieldX: -1, fieldY: -1 };
+          targetFieldPiece.alive = false;
+        }
+
+        piece.hasFought = true;
         targetFieldPiece.hasFought = true;
       }
-      if (piece.dead == true) piece.field = { fieldX: -1, fieldY: -1 };
-      else piece.field = move.to;
+      if (piece.alive == true) piece.field = move.to;
       return pieces;
     }
   }
@@ -48,27 +56,27 @@ export function isGameOver(
   if (remainingPlayerTimeYellow <= 0) return "red";
   if (remainingPlayerTimeRed <= 0) return "yellow";
 
+  const yellowMiner = pieces.find((piece) => piece.id === "miner" && piece.team === "yellow");
+  const yellowMinerIsDead = yellowMiner !== undefined && yellowMiner.alive !== true;
+  const redMiner = pieces.find((piece) => piece.id === "miner" && piece.team === "red");
+  const redMinerIsDead = redMiner !== undefined && redMiner.alive !== true;
+
+  if (yellowMinerIsDead && redMinerIsDead) return "tie";
+
   const yellowBomb = pieces.find((piece) => piece.id === "bomb" && piece.team === "yellow");
-  const yellowBombExists = yellowBomb !== undefined && yellowBomb.dead == true;
+  const yellowBombIsDead = yellowBomb !== undefined && yellowBomb.alive !== true;
   const redBomb = pieces.find((piece) => piece.id === "bomb" && piece.team === "red");
-  const redBombExists = redBomb !== undefined && redBomb.dead == true;
+  const redBombIsDead = redBomb !== undefined && redBomb.alive !== true;
 
   const yellowPiecesLength = pieces.filter(
-    (piece) => piece.team === "yellow" && piece.dead == true
+    (piece) => piece.team === "yellow" && piece.alive == true
   ).length;
   const redPiecesLength = pieces.filter(
-    (piece) => piece.team === "red" && piece.dead == true
+    (piece) => piece.team === "red" && piece.alive == true
   ).length;
 
-  if (!yellowBombExists || yellowPiecesLength <= 1) return "red";
-  if (!redBombExists || redPiecesLength <= 1) return "yellow";
-
-  const yellowMiner = pieces.find((piece) => piece.id === "miner" && piece.team === "yellow");
-  const yellowMinerExists = yellowMiner !== undefined && yellowMiner.dead == true;
-  const redMiner = pieces.find((piece) => piece.id === "miner" && piece.team === "red");
-  const redMinerExists = redMiner !== undefined && redMiner.dead == true;
-
-  if (!yellowMinerExists && !redMinerExists) return "tie";
+  if (yellowBombIsDead || yellowPiecesLength <= 1) return "red";
+  if (redBombIsDead || redPiecesLength <= 1) return "yellow";
 
   return null;
 }
@@ -91,7 +99,7 @@ export function getStartingPieces(placedPiecesInGame: Piece[]): Piece[] {
     field: { fieldX: 0, fieldY: 0 },
     team: "yellow",
     hasFought: false,
-    dead: false,
+    alive: false,
     active: false,
   }));
   const redStartingPieces: Piece[] = startingGamePieces.map((piece) => ({
@@ -99,7 +107,7 @@ export function getStartingPieces(placedPiecesInGame: Piece[]): Piece[] {
     field: { fieldX: 0, fieldY: 0 },
     team: "red",
     hasFought: false,
-    dead: false,
+    alive: false,
     active: false,
   }));
   if (placedPiecesInGame.length === 0) return yellowStartingPieces.concat(redStartingPieces);
