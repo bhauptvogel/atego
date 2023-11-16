@@ -139,8 +139,6 @@ function assignTeam(assignedTeam: string): void {
   teamAssignClock();
 }
 
-//   function addDeadPieceToSpace(piece: any): void {}
-
 function visualizeEndOfGame(winningTeam: string): void {
   state.gameOver = winningTeam;
   const endOfGameString: string =

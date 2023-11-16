@@ -13,7 +13,5 @@
   }
 </script>
 
-<button
-  class="border-primary border font-bold py-2 px-4 rounded text-primary"
-  on:click={handleNewGame}>Create new Game!</button
->
+<button on:click={handleNewGame}>Create new Game!</button>
+
