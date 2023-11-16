@@ -1,15 +1,15 @@
-interface Field {
+export interface Field {
   fieldX: number;
   fieldY: number;
 }
-interface gameState {
+export interface gameState {
   heroTeam: string;
   gameStarted: boolean;
   gameOver: string;
   currentTurn: string;
 }
 
-interface Piece {
+export interface Piece {
   id: string;
   field: Field;
   team: string;
@@ -18,7 +18,7 @@ interface Piece {
   active: boolean;
 }
 
-interface Move {
-  from: Field;
-  to: Field;
-}
+// export interface Move {
+//   from: Field;
+//   to: Field;
+// }

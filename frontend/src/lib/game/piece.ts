@@ -1,5 +1,6 @@
 import * as createjs from "createjs-module";
 import type { Resources } from "./resources";
+import type { Field } from "./models";
 import { flipFieldXIfRed, flipFieldYIfRed } from "./utils";
 
 export class GamePiece extends createjs.Container {
