@@ -6,7 +6,7 @@ import { createServer } from "http";
 import dotenv from "dotenv";
 import { GameService } from "./gameData";
 import { Piece, Move } from "./models";
-import { movePiece, getStartingPieces, isGameOver } from "./gameLogic";
+import { movePiece, getStartingPieces, isGameOver, getWinner } from "./gameLogic";
 
 if (process.env.NODE_ENV !== "production") dotenv.config();
 
@@ -49,52 +49,63 @@ io.on("connection", (socket: Socket) => {
     }
   });
 
-  socket.on("pieceMoved", (move: Move) => {
-    const gameId: string = games.getGameIdByPlayerId(socket.id);
-    const gamePieces: Piece[] = games.getPieces(gameId);
-    const updatedGamePieces: Piece[] = movePiece(gamePieces, move);
-    const remainingPlayerTimeYellow: number = games.getRemainingPlayerTime(gameId, "yellow");
-    const remainingPlayerTimeRed: number = games.getRemainingPlayerTime(gameId, "red");
-    const gameOver: string | null = isGameOver(
-      updatedGamePieces,
-      remainingPlayerTimeYellow,
-      remainingPlayerTimeRed
-    );
-    games.pushPieces(gameId, updatedGamePieces);
-    io.to(gameId).emit("updatePieces", updatedGamePieces);
-    if (gameOver !== null) {
-      io.to(gameId).emit("gameOver", gameOver);
-      games.gameOver(gameId);
-    } else {
-      games.switchPlayerTurn(gameId);
-      const turn: string = games.getPlayerTurn(gameId);
-      io.to(gameId).emit("updatePlayerTurn", turn);
-      io.to(gameId).emit("clockUpdate", [remainingPlayerTimeYellow, remainingPlayerTimeRed]);
-    }
-  });
+  socket.on("pieceMoved", (move: Move) => handlePieceMoved(move, socket.id));
 
-  socket.on("allPiecesPlaced", (pieces: Piece[]) => {
-    const gameId: string = games.getGameIdByPlayerId(socket.id);
-    const gamePieces: Piece[] = games.getPieces(gameId);
-    const updatedGamePieces: Piece[] = pieces.concat(gamePieces);
-    games.playerReady(gameId, socket.id);
-    if (games.allPlayersReady(gameId)) {
-      io.to(gameId).emit("startGame");
-      io.to(gameId).emit("updatePlayerTurn", "yellow");
-    }
-    games.pushPieces(gameId, updatedGamePieces);
-    io.to(gameId).emit("updatePieces", updatedGamePieces);
-  });
+  socket.on("allPiecesPlaced", (pieces: Piece[]) => handleAllPiecesPlaced(pieces, socket.id));
 
-  socket.on("disconnect", () => {
-    if (games.playerInGame(socket.id)) {
-      const gameId: string = games.getGameIdByPlayerId(socket.id);
-      console.log(`User (${socket.id}) disconnected from game (${gameId})`);
-    } else {
-      console.log(`User (${socket.id}) disconnected!`);
-    }
-  });
+  socket.on("disconnect", () => handleDisconnect(socket.id));
 });
+
+function handlePieceMoved(move: Move, socketId: string): void {
+  const gameId: string = games.getGameIdByPlayerId(socketId);
+  const gamePieces: Piece[] = games.getPieces(gameId);
+  const updatedGamePieces: Piece[] = movePiece(gamePieces, move);
+  const remainingPlayerTimeYellow: number = games.getRemainingPlayerTime(gameId, "yellow");
+  const remainingPlayerTimeRed: number = games.getRemainingPlayerTime(gameId, "red");
+  const gameOver: boolean = isGameOver(
+    updatedGamePieces,
+    remainingPlayerTimeYellow,
+    remainingPlayerTimeRed
+  );
+  games.pushPieces(gameId, updatedGamePieces);
+  io.to(gameId).emit("updatePieces", updatedGamePieces);
+  if (gameOver == true) {
+    games.switchPlayerTurn(gameId);
+    const turn: string = games.getPlayerTurn(gameId);
+    io.to(gameId).emit("updatePlayerTurn", turn);
+    io.to(gameId).emit("clockUpdate", [remainingPlayerTimeYellow, remainingPlayerTimeRed]);
+  } else {
+    const winningTeam: string = getWinner(
+      updatedGamePieces,
+      remainingPlayerTimeRed,
+      remainingPlayerTimeYellow
+    );
+    io.to(gameId).emit("gameOver", winningTeam);
+    games.gameOver(gameId);
+  }
+}
+
+function handleAllPiecesPlaced(pieces: Piece[], socketId: string): void {
+  const gameId: string = games.getGameIdByPlayerId(socketId);
+  const gamePieces: Piece[] = games.getPieces(gameId);
+  const updatedGamePieces: Piece[] = pieces.concat(gamePieces);
+  games.playerReady(gameId, socketId);
+  if (games.allPlayersReady(gameId)) {
+    io.to(gameId).emit("startGame");
+    io.to(gameId).emit("updatePlayerTurn", "yellow");
+  }
+  games.pushPieces(gameId, updatedGamePieces);
+  io.to(gameId).emit("updatePieces", updatedGamePieces);
+}
+
+function handleDisconnect(socketId: string): void {
+  if (games.playerInGame(socketId)) {
+    const gameId: string = games.getGameIdByPlayerId(socketId);
+    console.log(`User (${socketId}) disconnected from game (${gameId})`);
+  } else {
+    console.log(`User (${socketId}) disconnected!`);
+  }
+}
 
 function joinGame(socket: Socket, gameId: string): void {
   console.log(`User (${socket.id}) joined game (${gameId})`);
