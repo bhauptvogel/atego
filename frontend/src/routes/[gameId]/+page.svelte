@@ -3,36 +3,15 @@
   import io, { Socket } from "socket.io-client";
   import { onMount } from "svelte";
   import * as createjs from "createjs-module";
-
-  interface Field {
-    fieldX: number;
-    fieldY: number;
-  }
-  interface gameState {
-    heroTeam: string;
-    gameStarted: boolean;
-    gameOver: string;
-    currentTurn: string;
-  }
-
-  interface Piece {
-    id: string;
-    field: Field;
-    team: string;
-    hasFought: boolean;
-    alive: boolean;
-    active: boolean;
-  }
-
-  interface Move {
-    from: Field;
-    to: Field;
-  }
+  import { drawGameField } from "$lib/game/field";
+  import { Resources } from "$lib/game/resources";
+  import { GamePiece } from "$lib/game/piece";
+  import { flipFieldXIfRed, flipFieldYIfRed } from "$lib/game/utils";
 
   const gameId: string = $page.params.gameId;
   const nFieldsWidth: number = 4;
   const nFieldsHeight: number = 5;
-  let piecesManifest: { id: string; team: string; bitmap: createjs.Bitmap }[];
+  const resourceManager: Resources = new Resources();
   let mainStageWidth: number;
   let mainStageHeight: number;
   let socket: Socket;
@@ -62,35 +41,11 @@
     villainCharacterSpace = new createjs.Stage("villainCharacterCanvas");
     pieceContainer = new createjs.Container();
     possibleMovesContainer = new createjs.Container();
-    loadImages();
+    resourceManager.loadResources(handleResourcesLoaded);
   });
 
-  function loadImages(): void {
-    piecesManifest = ["assassin", "bomb", "killer", "miner", "mr_x", "runner", "spy", "unknown"]
-      .map((element) => [
-        {
-          id: element,
-          team: "yellow",
-          bitmap: new createjs.Bitmap(`pieces/${element}-yellow.png`),
-        },
-        { id: element, team: "red", bitmap: new createjs.Bitmap(`pieces/${element}-red.png`) },
-      ])
-      .flat();
-    piecesManifest.forEach((element: any) => {
-      element.bitmap.image.onload = handleLoad;
-    });
-  }
-
-  let loadedImages: number = 0;
-  function handleLoad(event: any): void {
-    loadedImages += 1;
-    if (loadedImages == piecesManifest.length) {
-      allImagesLoaded();
-    }
-  }
-
-  function allImagesLoaded(): void {
-    drawGameField();
+  function handleResourcesLoaded(): void {
+    drawGameField(mainStage, nFieldsWidth, nFieldsHeight, tileSize);
     mainStage.addChild(pieceContainer);
     mainStage.addChild(possibleMovesContainer);
     mainStage.on("stagemousedown", (eventObj: Object) => {
@@ -118,7 +73,17 @@
   }
 
   function addDeadPieceToSpace(characterID: string, team: string): void {
-    const deadPiece: GamePiece = new GamePiece(characterID, { fieldX: -1, fieldY: -1 }, team, false);
+    const deadPiece: GamePiece = new GamePiece(
+      characterID,
+      { fieldX: -1, fieldY: -1 },
+      team,
+      false,
+      state.heroTeam,
+      tileSize,
+      nFieldsWidth,
+      nFieldsHeight,
+      resourceManager
+    );
     const space: createjs.Stage =
       team === state.heroTeam ? heroCharacterSpace : villainCharacterSpace;
     deadPiece.x = 16 + space.children.length * 96;
@@ -140,7 +105,19 @@
     const heroCharacterSpaceIsEmpty = heroCharacterSpace.children.length === 0;
     pieces.forEach((piece) => {
       if (piece.active == true && piece.alive === true)
-        pieceContainer.addChild(new GamePiece(piece.id, piece.field, piece.team, piece.hasFought));
+        pieceContainer.addChild(
+          new GamePiece(
+            piece.id,
+            piece.field,
+            piece.team,
+            piece.hasFought,
+            state.heroTeam,
+            tileSize,
+            nFieldsWidth,
+            nFieldsHeight,
+            resourceManager
+          )
+        );
       else if (
         (state.gameStarted == true && piece.alive === false) ||
         (state.gameStarted == false &&
@@ -264,7 +241,7 @@
         state.heroTeam == piece.team
       ) {
         piece.isSelected = true;
-        renderPossibleMoves(piece.getPossibleMoves());
+        renderPossibleMoves(piece.getPossibleMoves(fieldOccupiedByTeam));
         mainStage.update();
       }
     }
@@ -275,8 +252,12 @@
     for (const possibleMove of possibleMovesList) {
       const circle: createjs.Shape = new createjs.Shape();
       const radius: number = 10;
-      const x: number = flipFieldXIfRed(possibleMove.fieldX) * tileSize + tileSize / 2;
-      const y: number = flipFieldYIfRed(possibleMove.fieldY) * tileSize + tileSize / 2;
+      const x: number =
+        flipFieldXIfRed(possibleMove.fieldX, state.heroTeam, nFieldsWidth) * tileSize +
+        tileSize / 2;
+      const y: number =
+        flipFieldYIfRed(possibleMove.fieldY, state.heroTeam, nFieldsHeight) * tileSize +
+        tileSize / 2;
       const color: string = "#646669";
       if (fieldOccupiedByTeam(possibleMove) !== "") circle.graphics.beginFill(color);
       else circle.graphics.setStrokeStyle(2).beginStroke(color);
@@ -289,8 +270,8 @@
     if (state.heroTeam == "" || state.gameOver != "") return;
 
     const clickedField: Field = {
-      fieldX: flipFieldXIfRed(Math.floor(evt.stageX / tileSize)),
-      fieldY: flipFieldYIfRed(Math.floor(evt.stageY / tileSize)),
+      fieldX: flipFieldXIfRed(Math.floor(evt.stageX / tileSize), state.heroTeam, nFieldsWidth),
+      fieldY: flipFieldYIfRed(Math.floor(evt.stageY / tileSize), state.heroTeam, nFieldsHeight),
     };
 
     // Placing
@@ -317,7 +298,12 @@
               selectedPiecesOfHeroCharacterSpace.characterId,
               clickedField,
               state.heroTeam,
-              false
+              false,
+              state.heroTeam,
+              tileSize,
+              nFieldsWidth,
+              nFieldsHeight,
+              resourceManager
             )
           );
           heroCharacterSpace.removeChild(selectedPiecesOfHeroCharacterSpace);
@@ -334,7 +320,7 @@
       if (piece instanceof GamePiece && piece.isSelected == true) {
         if (
           piece
-            .getPossibleMoves()
+            .getPossibleMoves(fieldOccupiedByTeam)
             .find(
               (field) => field.fieldX == clickedField.fieldX && field.fieldY == clickedField.fieldY
             ) !== undefined
@@ -344,7 +330,7 @@
             to: clickedField,
           });
           piece.field = clickedField;
-          piece.updateXY();
+          piece.updateXY(tileSize, state.heroTeam);
           deselectAllPieces();
           return;
         }
@@ -381,131 +367,6 @@
         return piece.team;
     }
     return "";
-  }
-
-  function flipFieldXIfRed(x: number): number {
-    if (state.heroTeam != "red") return x;
-    else return nFieldsWidth - 1 - x;
-  }
-
-  function flipFieldYIfRed(y: number): number {
-    if (state.heroTeam != "red") return y;
-    else return nFieldsHeight - 1 - y;
-  }
-
-  function drawGameField(): void {
-    const board: createjs.Shape = new createjs.Shape();
-    for (let x = 1; x < nFieldsWidth; x++) {
-      board.graphics
-        .setStrokeStyle(1)
-        .beginStroke("#646669")
-        .moveTo(tileSize * x, 0)
-        .lineTo(tileSize * x, nFieldsHeight * tileSize);
-    }
-    for (let y = 1; y < nFieldsHeight; y++) {
-      board.graphics
-        .setStrokeStyle(1)
-        .beginStroke("#646669")
-        .moveTo(0, tileSize * y)
-        .lineTo(nFieldsHeight * tileSize, tileSize * y);
-    }
-    mainStage.addChild(board);
-  }
-
-  class GamePiece extends createjs.Container {
-    characterId: string;
-    isSelected: boolean;
-    team: string;
-    image: createjs.Bitmap;
-    field: Field;
-
-    constructor(characterId: string, field: Field, pieceTeam: string, hasFought: boolean) {
-      super();
-
-      this.characterId = characterId;
-      this.team = pieceTeam;
-      this.isSelected = false;
-
-      this.field = field;
-      this.updateXY();
-
-      let imageId: string = characterId;
-      if (this.team !== state.heroTeam && hasFought == false) imageId = "unknown";
-
-      const image = piecesManifest.find(
-        (element: any) => element.team == this.team && element.id == imageId
-      );
-      if (image === undefined) throw new Error("Image not found!");
-      this.image = image.bitmap.clone();
-
-      this.addChild(this.image);
-    }
-
-    updateXY(): void {
-      this.x = flipFieldXIfRed(this.field.fieldX) * tileSize + tileSize / 4;
-      this.y = flipFieldYIfRed(this.field.fieldY) * tileSize + tileSize / 4;
-    }
-
-    getPossibleMoves(): Field[] {
-      const possibleMoves: Field[] = [];
-      const maxMoves: number =
-        this.characterId == "bomb" ? 0 : this.characterId == "runner" ? 1000 : 1;
-
-      // right
-      for (let i = this.field.fieldX + 1; i < nFieldsWidth; i++) {
-        const fieldOccupied: string = fieldOccupiedByTeam({ fieldX: i, fieldY: this.field.fieldY });
-        if (i > this.field.fieldX + maxMoves) {
-          break;
-        } else if (fieldOccupied != "") {
-          if (fieldOccupied !== this.team)
-            possibleMoves.push({ fieldX: i, fieldY: this.field.fieldY });
-          break;
-        } else {
-          possibleMoves.push({ fieldX: i, fieldY: this.field.fieldY });
-        }
-      }
-      // left
-      for (let i = this.field.fieldX - 1; i >= 0; i--) {
-        const fieldOccupied: string = fieldOccupiedByTeam({ fieldX: i, fieldY: this.field.fieldY });
-        if (i < this.field.fieldX - maxMoves) {
-          break;
-        } else if (fieldOccupied != "") {
-          if (fieldOccupied !== this.team)
-            possibleMoves.push({ fieldX: i, fieldY: this.field.fieldY });
-          break;
-        } else {
-          possibleMoves.push({ fieldX: i, fieldY: this.field.fieldY });
-        }
-      }
-      // up
-      for (let i = this.field.fieldY + 1; i < nFieldsHeight; i++) {
-        const fieldOccupied: string = fieldOccupiedByTeam({ fieldX: this.field.fieldX, fieldY: i });
-        if (i > this.field.fieldY + maxMoves) {
-          break;
-        } else if (fieldOccupied != "") {
-          if (fieldOccupied !== this.team)
-            possibleMoves.push({ fieldX: this.field.fieldX, fieldY: i });
-          break;
-        } else {
-          possibleMoves.push({ fieldX: this.field.fieldX, fieldY: i });
-        }
-      }
-      // down
-      for (let i = this.field.fieldY - 1; i >= 0; i--) {
-        const fieldOccupied: string = fieldOccupiedByTeam({ fieldX: this.field.fieldX, fieldY: i });
-        if (i < this.field.fieldY - maxMoves) {
-          break;
-        } else if (fieldOccupied != "") {
-          if (fieldOccupied !== this.team)
-            possibleMoves.push({ fieldX: this.field.fieldX, fieldY: i });
-          break;
-        } else {
-          possibleMoves.push({ fieldX: this.field.fieldX, fieldY: i });
-        }
-      }
-
-      return possibleMoves;
-    }
   }
 </script>
 
