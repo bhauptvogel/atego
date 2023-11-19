@@ -28,7 +28,7 @@ let state: gameState = {
   currentTurn: "",
 };
 
-export function startGame(pageId: string) {
+export function newGame(pageId: string) {
   gameId = pageId;
   resourceManager = new Resources();
   mainStage = new createjs.Stage("gameCanvas");
@@ -69,7 +69,7 @@ function connectToServer(): void {
   socket.on("startGame", () => (state.gameStarted = true));
   // socket.on("newDeadPiece", (piece) => addDeadPieceToSpace(piece));
   socket.on("gameOver", (winningTeam) => visualizeEndOfGame(winningTeam));
-  socket.on("clockUpdate", (remainingPlayerTime) => updateClock(remainingPlayerTime));
+//   socket.on("clockUpdate", (remainingPlayerTime) => updateClock(remainingPlayerTime));
 }
 
 function addDeadPieceToSpace(characterID: string, team: string): void {
@@ -77,7 +77,7 @@ function addDeadPieceToSpace(characterID: string, team: string): void {
     characterID,
     { fieldX: -1, fieldY: -1 },
     team,
-    false,
+    true,
     state.heroTeam,
     tileSize,
     nFieldsWidth,
@@ -136,7 +136,6 @@ function assignTeam(assignedTeam: string): void {
   state.heroTeam = assignedTeam;
   visualizeTeamArea();
   drawWaitingForOpponent();
-  teamAssignClock();
 }
 
 function visualizeEndOfGame(winningTeam: string): void {
@@ -156,10 +155,6 @@ function visualizeEndOfGame(winningTeam: string): void {
   mainStage.addChild(textEndOfGame);
   mainStage.update();
 }
-
-function updateClock(remainingPlayerTime: number): void {}
-
-function teamAssignClock(): void {}
 
 function visualizeTeamArea(): void {
   if (state.heroTeam == "") return;
