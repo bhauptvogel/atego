@@ -86,7 +86,7 @@ export function isGameOver(
   remainingPlayerTimeYellow: number,
   remainingPlayerTimeRed: number
 ): boolean {
-  if (remainingPlayerTimeYellow <= 0 || remainingPlayerTimeRed) return true;
+  if (remainingPlayerTimeYellow <= 0 || remainingPlayerTimeRed <= 0) return true;
 
   const yellowMiner = pieces.find((piece) => piece.id === "miner" && piece.team === "yellow");
   const yellowMinerIsDead = yellowMiner !== undefined && yellowMiner.alive !== true;

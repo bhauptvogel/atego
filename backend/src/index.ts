@@ -70,11 +70,6 @@ function handlePieceMoved(move: Move, socketId: string): void {
   games.pushPieces(gameId, updatedGamePieces);
   io.to(gameId).emit("updatePieces", updatedGamePieces);
   if (gameOver == true) {
-    games.switchPlayerTurn(gameId);
-    const turn: string = games.getPlayerTurn(gameId);
-    io.to(gameId).emit("updatePlayerTurn", turn);
-    io.to(gameId).emit("clockUpdate", [remainingPlayerTimeYellow, remainingPlayerTimeRed]);
-  } else {
     const winningTeam: string = getWinner(
       updatedGamePieces,
       remainingPlayerTimeRed,
@@ -82,6 +77,11 @@ function handlePieceMoved(move: Move, socketId: string): void {
     );
     io.to(gameId).emit("gameOver", winningTeam);
     games.gameOver(gameId);
+  } else {
+    games.switchPlayerTurn(gameId);
+    const turn: string = games.getPlayerTurn(gameId);
+    io.to(gameId).emit("updatePlayerTurn", turn);
+    io.to(gameId).emit("clockUpdate", [remainingPlayerTimeYellow, remainingPlayerTimeRed]);
   }
 }
 
