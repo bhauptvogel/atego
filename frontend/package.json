@@ -6,6 +6,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
+        "start": "serve ./dist",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
@@ -23,6 +24,7 @@
 	"dependencies": {
 		"axios": "^1.6.0",
 		"createjs-module": "^0.8.3",
+		"serve": "^14.2.1",
 		"socket.io-client": "^4.7.2"
 	}
 }

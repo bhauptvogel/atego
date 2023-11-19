@@ -59,7 +59,9 @@ function handleResourcesLoaded(): void {
 }
 
 function connectToServer(): void {
-  socket = io("http://localhost:8000/");
+  if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
+    throw new Error("VITE_SOCKET_ADRESS not defined");
+  socket = io(import.meta.env.VITE_SOCKET_ADRESS);
   socket.emit("joinGame", gameId);
 
   socket.on("connect", () => console.log(`Successfully connected to the server!`));
@@ -69,7 +71,7 @@ function connectToServer(): void {
   socket.on("startGame", () => (state.gameStarted = true));
   // socket.on("newDeadPiece", (piece) => addDeadPieceToSpace(piece));
   socket.on("gameOver", (winningTeam) => visualizeEndOfGame(winningTeam));
-//   socket.on("clockUpdate", (remainingPlayerTime) => updateClock(remainingPlayerTime));
+  //   socket.on("clockUpdate", (remainingPlayerTime) => updateClock(remainingPlayerTime));
 }
 
 function addDeadPieceToSpace(characterID: string, team: string): void {
