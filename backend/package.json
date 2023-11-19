@@ -5,7 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "npx tsc",
+    "build": "npm install && npx tsc",
     "start": "node src/index.js"
   },
   "author": "",
@@ -17,7 +17,8 @@
     "nanoid": "^3.3.4",
     "nodemon": "^3.0.1",
     "sinon": "^17.0.1",
-    "socket.io": "^4.7.2"
+    "socket.io": "^4.7.2",
+    "typescript": "^5.2.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.15",
