@@ -3,7 +3,9 @@
   import { goto } from "$app/navigation";
   async function handleNewGame() {
     try {
-      const res = await axios.get("http://localhost:8000/game/new");
+      if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
+        throw new Error("VITE_SOCKET_ADRESS not defined");
+      const res = await axios.get(`${import.meta.env.VITE_SOCKET_ADRESS}/game/new`);
       const gameId: string = res.data;
       console.log(`New game created! Id: ${gameId}`);
       goto(`/${gameId}`);
@@ -14,4 +16,3 @@
 </script>
 
 <button on:click={handleNewGame}>Create new Game!</button>
-
