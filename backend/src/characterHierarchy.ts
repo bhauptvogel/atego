@@ -1,5 +1,11 @@
-module.exports = {
-  characters: [
+export interface Character {
+  n: number;
+  id: string;
+  beats: number[];
+}
+
+export function getCharacterHierarchy(): Character[] {
+  return [
     {
       n: 0,
       id: "bomb",
@@ -35,5 +41,5 @@ module.exports = {
       id: "mr_x",
       beats: [2, 3, 4, 5, 6],
     },
-  ],
-};
+  ];
+}
