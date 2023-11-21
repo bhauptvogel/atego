@@ -13,14 +13,17 @@ export class GameService {
     }
     const newGame: Game = {
       gameId: gameId,
-      yellowPlayerId: null,
-      redPlayerId: null,
+      socketIdYellow: null,
+      socketIdRed: null,
+      playerUUIDYellow: null,
+      playerUUIDRed: null,
       yellowPlayerReady: false,
       redPlayerReady: false,
       yellowPlayerTime: 300,
       redPlayerTime: 300,
       turn: "yellow",
       pieces: [],
+      started: false,
       gameOver: false,
     };
     this.allGames.push(newGame);
@@ -44,22 +47,26 @@ export class GameService {
     return this.getGameById(gameId).pieces;
   }
 
-  playerReady(gameId: string, playerId: string): void {
+  playerReady(gameId: string, socketId: string): void {
     const game: Game = this.getGameById(gameId);
-    if (playerId === game.yellowPlayerId) game.yellowPlayerReady = true;
-    else if (playerId === game.redPlayerId) game.redPlayerReady = true;
-    else throw new Error(`Player ${playerId} is not assigned to a team!`);
+    if (socketId === game.socketIdYellow) game.yellowPlayerReady = true;
+    else if (socketId === game.socketIdRed) game.redPlayerReady = true;
+    else throw new Error(`Player ${socketId} is not assigned to a team!`);
   }
 
   allPlayersReady(gameId: string): boolean {
     const game: Game = this.getGameById(gameId);
-    return game.yellowPlayerReady && game.redPlayerReady
+    return game.yellowPlayerReady && game.redPlayerReady;
   }
 
   isGameFull(gameId: string): boolean {
     const game: Game = this.getGameById(gameId);
-    if (game.yellowPlayerId === null || game.redPlayerId === null) return false;
-    return true;
+    return game.socketIdYellow !== null && game.socketIdRed !== null;
+  }
+
+  isGameEmpty(gameId: string): boolean {
+    const game: Game = this.getGameById(gameId);
+    return game.socketIdYellow === null && game.socketIdRed === null;
   }
 
   switchPlayerTurn(gameId: string): void {
@@ -67,43 +74,72 @@ export class GameService {
     game.turn = game.turn === "yellow" ? "red" : "yellow";
   }
 
-  getPlayerTurn(gameId: string) {
+  getPlayerTurn(gameId: string): string {
     return this.getGameById(gameId).turn;
   }
 
-  assignPlayerToTeam(gameId: string, playerId: string): string {
-    const game: Game = this.getGameById(gameId);
-    if (game.yellowPlayerId === null) {
-      game.yellowPlayerId = playerId;
-      return "yellow";
-    } else if (game.redPlayerId === null) {
-      game.redPlayerId = playerId;
-      return "red";
-    } else {
-      return "";
-    }
+  hasGameStarted(gameId: string): boolean {
+    return this.getGameById(gameId).started;
   }
 
-  getPlayerTeam(gameId: string, playerId: string): string {
-    const game: Game = this.getGameById(gameId);
-    if (playerId === game.yellowPlayerId) return "yellow";
-    else if (playerId === game.redPlayerId) return "red";
-    else throw new Error(`Player ${playerId} is not assigned to team!`);
+  startGame(gameId: string): void {
+    this.getGameById(gameId).started = true;
   }
 
-  playerInGame(playerId: string): boolean {
+  hasPlayerPlacesAllPieces(gameId: string, socketId: string): boolean {
+    const game: Game = this.getGameById(gameId);
+    const socketTeam: string = this.getTeamOfSocket(gameId, socketId);
+    const socketPieces = game.pieces.filter((piece) => piece.team === socketTeam);
+    return socketPieces.every((piece) => piece.active == true);
+  }
+
+  updateSocketOfPlayer(gameId: string, socketId: string, playerUUID: string) {
+    const game: Game = this.getGameById(gameId);
+    if (game.playerUUIDYellow === playerUUID) game.socketIdYellow = socketId;
+    else if (game.playerUUIDRed === playerUUID) game.socketIdRed = socketId;
+    else throw new Error(`Player ${playerUUID} is not assigned to a team!`);
+  }
+
+  assignSocketToYellow(gameId: string, socketId: string): void {
+    this.getGameById(gameId).socketIdYellow = socketId;
+  }
+
+  assignSocketToRed(gameId: string, socketId: string): void {
+    this.getGameById(gameId).socketIdRed = socketId;
+  }
+
+  assignPlayerUUIDToYellow(gameId: string, playerUUID: string): void {
+    this.getGameById(gameId).playerUUIDYellow = playerUUID;
+  }
+  assignPlayerUUIDToRed(gameId: string, playerUUID: string): void {
+    this.getGameById(gameId).playerUUIDRed = playerUUID;
+  }
+
+  isPlayerInGame(gameId: string, playerUUID: string): boolean {
+    const game: Game = this.getGameById(gameId);
+    return game.playerUUIDRed === playerUUID || game.playerUUIDYellow === playerUUID;
+  }
+
+  getTeamOfSocket(gameId: string, socketId: string): string {
+    const game: Game = this.getGameById(gameId);
+    if (socketId === game.socketIdYellow) return "yellow";
+    else if (socketId === game.socketIdRed) return "red";
+    else throw new Error(`Player ${socketId} is not assigned to team!`);
+  }
+
+  socketInGame(socketId: string): boolean {
     return (
       this.allGames.find(
-        (element) => element.yellowPlayerId === playerId || element.yellowPlayerId === playerId
+        (element) => element.socketIdYellow === socketId || element.socketIdYellow === socketId
       ) !== undefined
     );
   }
 
-  getGameIdByPlayerId(playerId: string): string {
+  getGameIdBySocketId(socketId: string): string {
     const game: Game | undefined = this.allGames.find(
-      (element) => element.yellowPlayerId === playerId || element.redPlayerId === playerId
+      (element) => element.socketIdYellow === socketId || element.socketIdRed === socketId
     );
-    if (game === undefined) throw new Error(`No game found with playerId ${playerId}`);
+    if (game === undefined) throw new Error(`No game found with socketId ${socketId}`);
     return game.gameId;
   }
 

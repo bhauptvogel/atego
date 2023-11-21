@@ -9,6 +9,7 @@ import type { gameState, Field, Piece } from "$lib/game/models";
 const nFieldsWidth: number = 4;
 const nFieldsHeight: number = 5;
 let gameId: string;
+let playerId: string;
 let mainStageWidth: number;
 let mainStageHeight: number;
 let resourceManager: Resources;
@@ -21,15 +22,17 @@ let pieceContainer: createjs.Container;
 let heroArea: createjs.Shape;
 let possibleMovesContainer: createjs.Container;
 let textWaitingforOpponent: createjs.Text;
-let state: gameState = {
-  heroTeam: "",
-  gameStarted: false,
-  gameOver: "",
-  currentTurn: "",
-};
+let state: gameState;
 
-export function newGame(pageId: string) {
+export function newGame(pageId: string, playerUUID: string) {
   gameId = pageId;
+  playerId = playerUUID;
+  state = {
+    heroTeam: "",
+    gameStarted: false,
+    gameOver: "",
+    currentTurn: "",
+  };
   resourceManager = new Resources();
   mainStage = new createjs.Stage("gameCanvas");
   mainStageWidth = (mainStage.canvas as HTMLCanvasElement).width;
@@ -62,16 +65,14 @@ function connectToServer(): void {
   if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
     throw new Error("VITE_SOCKET_ADRESS not defined");
   socket = io(import.meta.env.VITE_SOCKET_ADRESS);
-  socket.emit("joinGame", gameId);
+  socket.emit("joinGame", gameId, playerId);
 
   socket.on("connect", () => console.log(`Successfully connected to the server!`));
   socket.on("updatePieces", (pieces) => updatePieces(pieces));
   socket.on("updatePlayerTurn", (updatedTurn: string) => (state.currentTurn = updatedTurn));
-  socket.on("assignTeam", (assignedTeam: string) => assignTeam(assignedTeam));
+  socket.on("assignTeam", (assignedTeam: string) => (state.heroTeam = assignedTeam));
   socket.on("startGame", () => (state.gameStarted = true));
-  // socket.on("newDeadPiece", (piece) => addDeadPieceToSpace(piece));
   socket.on("gameOver", (winningTeam) => visualizeEndOfGame(winningTeam));
-  //   socket.on("clockUpdate", (remainingPlayerTime) => updateClock(remainingPlayerTime));
 }
 
 function addDeadPieceToSpace(characterID: string, team: string): void {
@@ -93,16 +94,29 @@ function addDeadPieceToSpace(characterID: string, team: string): void {
   space.addChild(deadPiece);
 }
 
+function addUnplacedPiece(characterID: string): void {
+  const unplacedPiece: GamePiece = new GamePiece(
+    characterID,
+    { fieldX: -1, fieldY: -1 },
+    state.heroTeam,
+    false,
+    state.heroTeam,
+    tileSize,
+    nFieldsWidth,
+    nFieldsHeight,
+    resourceManager
+  );
+  unplacedPiece.x = 16 + heroCharacterSpace.children.length * 96;
+  unplacedPiece.y = 16;
+  heroCharacterSpace.addChild(unplacedPiece);
+}
+
 function updatePieces(pieces: Piece[]): void {
   if (state.gameStarted == true) {
     pieceContainer.removeAllChildren();
     heroCharacterSpace.removeAllChildren();
     villainCharacterSpace.removeAllChildren();
     possibleMovesContainer.removeAllChildren();
-  } else if (
-    pieces.filter((piece) => piece.team !== state.heroTeam && piece.alive == true).length > 0
-  ) {
-    villainCharacterSpace.removeChild(textWaitingforOpponent);
   }
   const heroCharacterSpaceIsEmpty = heroCharacterSpace.children.length === 0;
   pieces.forEach((piece) => {
@@ -120,24 +134,28 @@ function updatePieces(pieces: Piece[]): void {
           resourceManager
         )
       );
-    else if (
-      (state.gameStarted == true && piece.alive === false) ||
-      (state.gameStarted == false &&
-        piece.team === state.heroTeam &&
-        piece.active == false &&
-        heroCharacterSpaceIsEmpty)
-    )
+    else if (state.gameStarted == true && piece.alive === false && piece.active === true)
       addDeadPieceToSpace(piece.id, piece.team);
+    else if (
+      state.gameStarted == false &&
+      piece.team === state.heroTeam &&
+      piece.active == false &&
+      heroCharacterSpaceIsEmpty
+    )
+      addUnplacedPiece(piece.id);
   });
+
+  // draw and remove waiting for opponent text and placement area
+  if (pieces.filter((piece) => piece.team !== state.heroTeam && piece.active == true).length > 0)
+    villainCharacterSpace.removeChild(textWaitingforOpponent);
+  else drawWaitingForOpponent();
+  if (pieces.filter((piece) => piece.team === state.heroTeam && piece.active == true).length > 0)
+    mainStage.removeChild(heroArea);
+  else visualizeTeamArea();
+
   mainStage.update();
   heroCharacterSpace.update();
   villainCharacterSpace.update();
-}
-
-function assignTeam(assignedTeam: string): void {
-  state.heroTeam = assignedTeam;
-  visualizeTeamArea();
-  drawWaitingForOpponent();
 }
 
 function visualizeEndOfGame(winningTeam: string): void {
@@ -159,6 +177,7 @@ function visualizeEndOfGame(winningTeam: string): void {
 }
 
 function visualizeTeamArea(): void {
+  mainStage.removeChild(heroArea);
   if (state.heroTeam == "") return;
   heroArea = new createjs.Shape();
   heroArea.graphics.beginFill("rgb(55, 61, 73, 0.4)");

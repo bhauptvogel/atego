@@ -3,6 +3,7 @@ export interface Field {
   fieldY: number;
 }
 
+// TODO: refactor: remove hasFought, alive, active (search for more elegant solution)
 export interface Piece {
   id: string;
   field: Field;
@@ -19,13 +20,16 @@ export interface Move {
 
 export interface Game {
   gameId: string;
-  yellowPlayerId: string | null;
-  redPlayerId: string | null;
+  socketIdYellow: string | null;
+  socketIdRed: string | null;
+  playerUUIDYellow: string | null;
+  playerUUIDRed: string | null;
   yellowPlayerReady: boolean;
   redPlayerReady: boolean;
   yellowPlayerTime: number;
   redPlayerTime: number;
   turn: string;
   pieces: Piece[];
+  started: boolean;
   gameOver: boolean;
 }
