@@ -8,9 +8,8 @@ export interface Piece {
   id: string;
   field: Field;
   team: string;
-  hasFought: boolean;
+  exposed: boolean;
   alive: boolean;
-  active: boolean;
 }
 
 export interface Move {

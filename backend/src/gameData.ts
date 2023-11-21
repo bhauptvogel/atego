@@ -86,13 +86,6 @@ export class GameService {
     this.getGameById(gameId).started = true;
   }
 
-  hasPlayerPlacesAllPieces(gameId: string, socketId: string): boolean {
-    const game: Game = this.getGameById(gameId);
-    const socketTeam: string = this.getTeamOfSocket(gameId, socketId);
-    const socketPieces = game.pieces.filter((piece) => piece.team === socketTeam);
-    return socketPieces.every((piece) => piece.active == true);
-  }
-
   updateSocketOfPlayer(gameId: string, socketId: string, playerUUID: string) {
     const game: Game = this.getGameById(gameId);
     if (game.playerUUIDYellow === playerUUID) game.socketIdYellow = socketId;

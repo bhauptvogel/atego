@@ -31,6 +31,7 @@ app.get("/:gameId", (req, res) => {
   const gameId = req.params.gameId;
   if (games.gameIdExists(gameId) == true) {
     const playerUUID: string = nanoid();
+    // TODO: use User Account ID as player UUID
     res.send(playerUUID);
   } else {
     throw new Error(`Game (${gameId}) does not exist!`);

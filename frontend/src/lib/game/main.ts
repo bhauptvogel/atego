@@ -120,13 +120,13 @@ function updatePieces(pieces: Piece[]): void {
   }
   const heroCharacterSpaceIsEmpty = heroCharacterSpace.children.length === 0;
   pieces.forEach((piece) => {
-    if (piece.active == true && piece.alive === true)
+    if (piece.alive === true)
       pieceContainer.addChild(
         new GamePiece(
           piece.id,
           piece.field,
           piece.team,
-          piece.hasFought,
+          piece.exposed,
           state.heroTeam,
           tileSize,
           nFieldsWidth,
@@ -134,24 +134,26 @@ function updatePieces(pieces: Piece[]): void {
           resourceManager
         )
       );
-    else if (state.gameStarted == true && piece.alive === false && piece.active === true)
+    else if (state.gameStarted == true && piece.alive === false)
       addDeadPieceToSpace(piece.id, piece.team);
     else if (
       state.gameStarted == false &&
       piece.team === state.heroTeam &&
-      piece.active == false &&
+      piece.alive == false &&
       heroCharacterSpaceIsEmpty
     )
       addUnplacedPiece(piece.id);
   });
 
   // draw and remove waiting for opponent text and placement area
-  if (pieces.filter((piece) => piece.team !== state.heroTeam && piece.active == true).length > 0)
-    villainCharacterSpace.removeChild(textWaitingforOpponent);
-  else drawWaitingForOpponent();
-  if (pieces.filter((piece) => piece.team === state.heroTeam && piece.active == true).length > 0)
-    mainStage.removeChild(heroArea);
-  else visualizeTeamArea();
+  if (!state.gameStarted) {
+    if (pieces.filter((piece) => piece.team !== state.heroTeam && piece.alive == true).length > 0)
+      villainCharacterSpace.removeChild(textWaitingforOpponent);
+    else drawWaitingForOpponent();
+    if (pieces.filter((piece) => piece.team === state.heroTeam && piece.alive == true).length > 0)
+      mainStage.removeChild(heroArea);
+    else visualizeTeamArea();
+  }
 
   mainStage.update();
   heroCharacterSpace.update();
@@ -221,9 +223,8 @@ function allPiecesPlaced(): void {
         id: piece.characterId,
         field: piece.field,
         team: piece.team,
-        hasFought: false,
+        exposed: false,
         alive: true,
-        active: true,
       };
       packagePieces.push(packagedPiece);
     }
