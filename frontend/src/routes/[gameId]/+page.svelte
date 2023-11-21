@@ -1,9 +1,35 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import axios from "axios";
   import { onMount } from "svelte";
   import { newGame } from "$lib/game/main";
-  
-  onMount(() => newGame($page.params.gameId))
+  import Cookies from "js-cookie";
+
+  function setPlayerIdCookie(playerId: string) {
+    Cookies.set("playerId", playerId, { expires: 7 });
+  }
+
+  function getPlayerIdFromCookie(): string | undefined {
+    return Cookies.get("playerId");
+  }
+
+  async function joinGame() {
+    const gameId: string = $page.params.gameId;
+    const playerUUIDFromCookie: string | undefined = getPlayerIdFromCookie();
+    if (playerUUIDFromCookie == undefined) {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_SOCKET_ADRESS}/${gameId}`);
+        const newPlayerUUID: string = response.data;
+        setPlayerIdCookie(newPlayerUUID);
+        newGame(gameId, newPlayerUUID);
+      } catch (e) {
+        console.log(e);
+      }
+    } else {
+      newGame(gameId, playerUUIDFromCookie);
+    }
+  }
+  onMount(() => joinGame());
 </script>
 
 <div class="game">
@@ -41,7 +67,7 @@
     justify-content: center;
     align-items: center;
   }
-  .game-clock {
+  /* .game-clock {
     position: absolute;
     left: calc(50% - 768px / 2 - 150px);
     font-family: Arial, Helvetica, sans-serif;
@@ -72,5 +98,5 @@
   .label {
     font-size: 1em;
     color: #888;
-  }
+  } */
 </style>

@@ -113,9 +113,7 @@ export function isGameOver(
   return false;
 }
 
-export function getStartingPieces(placedPiecesInGame: Piece[]): Piece[] {
-  if (placedPiecesInGame.length === 16) return placedPiecesInGame;
-
+export function getStartingPieces(): Piece[] {
   const startingGamePieces: string[] = [
     "bomb",
     "spy",
@@ -142,16 +140,16 @@ export function getStartingPieces(placedPiecesInGame: Piece[]): Piece[] {
     alive: false,
     active: false,
   }));
-  if (placedPiecesInGame.length === 0) return yellowStartingPieces.concat(redStartingPieces);
-  else if (
-    placedPiecesInGame.length === 8 &&
-    placedPiecesInGame.filter((piece) => piece.team === "yellow").length === 8
-  )
-    return placedPiecesInGame.concat(redStartingPieces);
-  else if (
-    placedPiecesInGame.length === 8 &&
-    placedPiecesInGame.filter((piece) => piece.team === "red").length === 8
-  )
-    return placedPiecesInGame.concat(yellowStartingPieces);
-  else throw new Error("getStartingPieces");
+  //   if (placedPiecesInGame.length === 0) return yellowStartingPieces.concat(redStartingPieces);
+  //   else if (
+  //     placedPiecesInGame.length === 8 &&
+  //     placedPiecesInGame.filter((piece) => piece.team === "yellow").length === 8
+  //   )
+  //     return placedPiecesInGame.concat(redStartingPieces);
+  //   else if (
+  //     placedPiecesInGame.length === 8 &&
+  //     placedPiecesInGame.filter((piece) => piece.team === "red").length === 8
+  //   )
+  return redStartingPieces.concat(yellowStartingPieces);
+  //   else throw new Error("getStartingPieces");
 }

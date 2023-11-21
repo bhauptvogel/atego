@@ -22,8 +22,10 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@types/js-cookie": "^3.0.6",
 		"axios": "^1.6.0",
 		"createjs-module": "^0.8.3",
+		"js-cookie": "^3.0.5",
 		"serve": "^14.2.1",
 		"socket.io-client": "^4.7.2"
 	}
