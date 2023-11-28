@@ -15,4 +15,15 @@
   }
 </script>
 
-<button on:click={handleNewGame}>Create new Game!</button>
+<div class="container">
+  <button on:click={handleNewGame}>New Game</button>
+</div>
+
+<style lang="scss">
+  .container {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+</style>

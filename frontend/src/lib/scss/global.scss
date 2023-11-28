@@ -1,0 +1,41 @@
+@import '$lib/scss/_theme.scss';
+// @import 'variables'
+
+html,
+body {
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+
+body {
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+  background-color: var(--color--page-background);
+  margin: 0 10%;
+}
+
+button {
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  border: 2px solid;
+  border-color: var(--color--component-background);
+  border-radius: 0.5rem;
+  color: var(--color--primary);
+  background-color: #292c32;
+  padding: 0.7rem 6rem 0.7rem 6rem;
+  outline: none;
+
+  &:hover {
+    background-color: var(--color--primary);
+    border-color: var(--color--primary);
+    color: var(--color--component-background);
+    cursor: pointer;
+  }
+
+  &:active {
+    background-color: var(--color--button-active);
+    border-color: var(--color--button-active);
+    color: var(--color--page-background);
+  }
+}

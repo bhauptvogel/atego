@@ -1,0 +1,24 @@
+@mixin define-color($title, $color) {
+	--color--#{$title}: #{$color};
+
+	--color--#{$title}-h: #{hue($color)};
+	--color--#{$title}-l: #{lightness($color)};
+	--color--#{$title}-s: #{saturation($color)};
+	--color--#{$title}-a: #{alpha($color)};
+
+	--color--#{$title}-rgb: #{red($color)}, #{green($color)}, #{blue($color)};
+
+}
+
+
+@mixin base-theme {
+  @include define-color("primary", #d1d0c5);
+  @include define-color("unselected", #646669);
+  @include define-color("page-background", #323437);
+  @include define-color("component-background", #2c2e31);
+  @include define-color("button-active", #5f606a);
+}
+
+:root {
+	@include base-theme;
+}
