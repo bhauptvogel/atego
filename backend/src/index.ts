@@ -134,6 +134,7 @@ function handleDisconnect(socketId: string): void {
 }
 
 function joinGame(socket: Socket, playerId: string, gameId: string): void {
+  if (games.isGameFull(gameId)) throw new Error(`Cannot join game ${gameId} because it is full!`);
   socket.join(gameId);
   if (games.isGameEmpty(gameId)) {
     // join game first
@@ -151,6 +152,7 @@ function joinGame(socket: Socket, playerId: string, gameId: string): void {
 }
 
 function rejoinGame(socket: Socket, playerId: string, gameId: string): void {
+  if (!games.isGameFull(gameId)) throw new Error(`Cannot rejoin game ${gameId} which is not full!`);
   socket.join(gameId);
   games.updateSocketOfPlayer(gameId, socket.id, playerId);
 }

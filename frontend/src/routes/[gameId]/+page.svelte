@@ -32,8 +32,6 @@
     else throw new Error("PlayerId is undefined");
   }
 
-  async function renderGameNewSocket(pageId: string) {}
-
   async function main() {
     const gameId: string = $page.params.gameId;
     await axios
