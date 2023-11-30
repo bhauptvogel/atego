@@ -59,6 +59,13 @@ export class GameService {
     return game.yellowPlayerReady && game.redPlayerReady;
   }
 
+  getAmountOfPlayersInGame(gameId: string): number {
+    let output = 0;
+    if(this.getGameById(gameId).socketIdYellow !== null) output++;
+    if(this.getGameById(gameId).socketIdRed !== null) output++;
+    return output;
+  }
+
   isGameFull(gameId: string): boolean {
     const game: Game = this.getGameById(gameId);
     return game.socketIdYellow !== null && game.socketIdRed !== null;
