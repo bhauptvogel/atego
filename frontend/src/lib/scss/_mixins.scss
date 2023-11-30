@@ -1,0 +1,7 @@
+@mixin container {
+    border-color: var(--color--component-background);
+    outline: none;
+    border: none;
+    border-radius: 0.5rem;
+    background-color: var(--color--component-background);
+  }

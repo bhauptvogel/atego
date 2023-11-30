@@ -1,5 +1,6 @@
 import * as createjs from "createjs-module";
-import io, { Socket } from "socket.io-client";
+import type io from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import { drawGameField } from "$lib/game/field";
 import { Resources } from "$lib/game/resources";
 import { GamePiece } from "$lib/game/piece";
@@ -24,8 +25,9 @@ let possibleMovesContainer: createjs.Container;
 let textWaitingforOpponent: createjs.Text;
 let state: gameState;
 
-export function newGame(pageId: string, playerUUID: string) {
+export function buildGame(pageId: string, playerUUID: string, newSocket: Socket) {
   gameId = pageId;
+  socket = newSocket;
   playerId = playerUUID;
   state = {
     heroTeam: "",
@@ -62,12 +64,15 @@ function handleResourcesLoaded(): void {
 }
 
 function connectToServer(): void {
-  if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
-    throw new Error("VITE_SOCKET_ADRESS not defined");
-  socket = io(import.meta.env.VITE_SOCKET_ADRESS);
-  socket.emit("joinGame", gameId, playerId);
+  //   if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
+  //     throw new Error("VITE_SOCKET_ADRESS not defined");
+  //   socket = io(import.meta.env.VITE_SOCKET_ADRESS);
+  socket.emit("socketReady", gameId);
 
-  socket.on("connect", () => console.log(`Successfully connected to the server!`));
+  socket.off("playerId");
+  socket.off("buildGame");
+  socket.off("gameIsFull");
+  socket.off("noOpponent");
   socket.on("updatePieces", (pieces) => updatePieces(pieces));
   socket.on("updatePlayerTurn", (updatedTurn: string) => (state.currentTurn = updatedTurn));
   socket.on("assignTeam", (assignedTeam: string) => (state.heroTeam = assignedTeam));

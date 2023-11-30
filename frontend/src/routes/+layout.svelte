@@ -4,14 +4,14 @@
 </script>
 
 <div class="application">
-  <nav>
+  <header>
     <a class="home" href="/">Atego</a>
-    <a class="account" href="/login"><i class="fas fa-fw fa-user"></i></a>
-  </nav>
+    <!-- <a class="account" href="/login"><i class="fas fa-fw fa-user"></i></a> -->
+  </header>
 
-  <div id="main">
+  <main>
     <slot />
-  </div>
+  </main>
 </div>
 
 <style global lang="scss">
@@ -22,10 +22,10 @@
     justify-content: start;
     height: 100%;
   }
-  nav {
+  header {
     justify-content: space-between;
     display: flex;
-    padding: 15px;
+    padding: 1.5rem;
     a {
       color: var(--color--unselected);
       text-decoration: none;
@@ -42,7 +42,7 @@
     }
   }
 
-  #main {
+  main {
     height: 100%;
   }
 </style>

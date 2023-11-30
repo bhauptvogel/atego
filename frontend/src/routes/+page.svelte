@@ -20,6 +20,9 @@
 </div>
 
 <style lang="scss">
+  button {
+    padding: 0.7rem 6rem 0.7rem 6rem;
+  }
   .container {
     height: 100%;
     display: flex;
