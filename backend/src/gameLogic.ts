@@ -35,8 +35,8 @@ export function movePiece(pieces: Piece[], move: Move) {
           targetFieldPiece.alive = false;
         }
 
-        piece.hasFought = true;
-        targetFieldPiece.hasFought = true;
+        piece.exposed = true;
+        targetFieldPiece.exposed = true;
       }
       if (piece.alive == true) piece.field = move.to;
       return pieces;
@@ -128,17 +128,15 @@ export function getStartingPieces(): Piece[] {
     id: piece,
     field: { fieldX: 0, fieldY: 0 },
     team: "yellow",
-    hasFought: false,
+    exposed: false,
     alive: false,
-    active: false,
   }));
   const redStartingPieces: Piece[] = startingGamePieces.map((piece) => ({
     id: piece,
     field: { fieldX: 0, fieldY: 0 },
     team: "red",
-    hasFought: false,
+    exposed: false,
     alive: false,
-    active: false,
   }));
   //   if (placedPiecesInGame.length === 0) return yellowStartingPieces.concat(redStartingPieces);
   //   else if (

@@ -1,0 +1,35 @@
+@import "$lib/scss/_theme.scss";
+@import "$lib/scss/_mixins.scss";
+
+
+  html,
+  body {
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+
+body {
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+  background-color: var(--color--page-background);
+  margin: 0 15%;
+}
+
+button {
+  @include container;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--color--primary);
+  
+
+  &:hover {
+    background-color: var(--color--primary);
+    color: var(--color--component-background);
+    cursor: pointer;
+  }
+
+  &:active {
+    background-color: var(--color--button-active);
+    color: var(--color--page-background);
+  }
+}

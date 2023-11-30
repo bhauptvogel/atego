@@ -16,7 +16,7 @@ export class GamePiece extends createjs.Container {
     characterId: string,
     field: Field,
     pieceTeam: string,
-    hasFought: boolean,
+    exposed: boolean,
     heroTeam: string,
     tileSize: number,
     nFieldsWidth: number,
@@ -36,7 +36,7 @@ export class GamePiece extends createjs.Container {
     this.updateXY(tileSize, heroTeam);
 
     let imageId: string = characterId;
-    if (this.team !== heroTeam && hasFought == false) imageId = "unknown";
+    if (this.team !== heroTeam && exposed == false) imageId = "unknown";
 
     this.image = resourceManager.getPieceImageByIdAndTeam(imageId, this.team);
     if (this.image === undefined) throw new Error("Image not found!");

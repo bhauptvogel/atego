@@ -3,14 +3,12 @@ export interface Field {
   fieldY: number;
 }
 
-// TODO: refactor: remove hasFought, alive, active (search for more elegant solution)
 export interface Piece {
   id: string;
   field: Field;
   team: string;
-  hasFought: boolean;
+  exposed: boolean;
   alive: boolean;
-  active: boolean;
 }
 
 export interface Move {
