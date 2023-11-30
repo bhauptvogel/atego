@@ -32,25 +32,43 @@
     else throw new Error("PlayerId is undefined");
   }
 
+  async function renderGameNewSocket(pageId: string) {}
+
   async function main() {
     const gameId: string = $page.params.gameId;
-    await axios.get(`${import.meta.env.VITE_SOCKET_ADRESS}/${gameId}`).then((res) => {
-      const gameExists = res.data;
-      if (gameExists) {
-        if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
-          throw new Error("VITE_SOCKET_ADRESS not defined");
-        const socket: Socket = io(import.meta.env.VITE_SOCKET_ADRESS);
-        socket.emit("joinGame", gameId, getPlayerIdFromCookie());
+    await axios
+      .get(`${import.meta.env.VITE_SOCKET_ADRESS}/${gameId}`, {
+        headers: {
+          playerId: getPlayerIdFromCookie(),
+        },
+      })
+      .then((res) => {
+        if (res.data.gameExists === false) {
+          status = GameStatus.gameDoesNotExist;
+        } else {
+          if (getPlayerIdFromCookie() === undefined) setPlayerIdCookie(res.data.playerUUID);
+          if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
+            throw new Error("VITE_SOCKET_ADRESS not defined");
+          const socket: Socket = io(import.meta.env.VITE_SOCKET_ADRESS);
+          socket.on("connect", () => console.log(`Successfully connected to the server!`));
 
-        socket.on("connect", () => console.log(`Successfully connected to the server!`));
-        socket.on("playerId", (newPlayerId) => setPlayerIdCookie(newPlayerId));
-        socket.on("buildGame", () => renderGame(gameId, socket));
-        socket.on("noOpponent", () => (status = GameStatus.gameHasNoOpponent));
-        socket.on("gameIsFull", () => (status = GameStatus.gameIsAlreadyFull));
-      } else {
-        status = GameStatus.gameDoesNotExist;
-      }
-    });
+          if (res.data.playersInGame === 0) {
+            status = GameStatus.gameHasNoOpponent;
+            socket.emit("joinGame", gameId, res.data.playerUUID);
+            socket.on("buildGame", () => renderGame(gameId, socket));
+          } else if (res.data.playersInGame === 1) {
+            socket.emit("joinGame", gameId, res.data.playerUUID);
+            renderGame(gameId, socket);
+          } else if (res.data.playersInGame === 2) {
+            if (res.data.playerIdInGame == true) {
+              socket.emit("rejoinGame", gameId, res.data.playerUUID);
+              renderGame(gameId, socket);
+            } else {
+              status = GameStatus.gameIsAlreadyFull;
+            }
+          }
+        }
+      });
   }
 
   onMount(() => main());

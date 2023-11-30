@@ -7,7 +7,6 @@ import dotenv from "dotenv";
 import { GameService } from "./gameData";
 import { Piece, Move } from "./models";
 import { movePiece, getStartingPieces, isGameOver, getWinner } from "./gameLogic";
-import { join } from "path";
 
 if (process.env.NODE_ENV !== "production") dotenv.config();
 
@@ -30,7 +29,24 @@ app.get("/game/new", (req, res) => {
 
 app.get("/:gameId", (req, res) => {
   const gameId = req.params.gameId;
-  res.send(games.gameIdExists(gameId));
+
+  // TODO: look if game exists in *db*
+  // TODO: See if player is in game
+  if (games.gameIdExists(gameId) == false) {
+    res.send({ gameExists: false });
+    return;
+  }
+
+  // TODO: use User Account ID as player UUID if player is logged in
+  let playerId = req.headers.playerid?.toString();
+  if (playerId === undefined) playerId = `guest_${nanoid()}`;
+
+  res.send({
+    gameExists: true,
+    playersInGame: games.getAmountOfPlayersInGame(gameId),
+    playerUUID: playerId,
+    playerIdInGame: games.isPlayerInGame(gameId, playerId),
+  });
 });
 
 const io = new Server(server, {
@@ -44,6 +60,8 @@ io.on("connection", (socket: Socket) => {
   console.log(`New connection: Socket ${socket.id}`);
 
   socket.on("joinGame", (gameId, playerId) => joinGame(socket, playerId, gameId));
+
+  socket.on("rejoinGame", (gameId, playerId) => rejoinGame(socket, playerId, gameId));
 
   socket.on("socketReady", (gameId) => sendGameData(gameId, socket));
 
@@ -116,30 +134,8 @@ function handleDisconnect(socketId: string): void {
 }
 
 function joinGame(socket: Socket, playerId: string, gameId: string): void {
-  // TODO: look if game exists in *db*
-  // TODO: See if player is in game
-  if (games.gameIdExists(gameId) != true) {
-    // games does not exist
-    throw new Error(`Game (${gameId}) does not exist!`);
-  }
-
-  if (playerId === null) {
-    // player has no id (cookie) yet
-    const playerUUID: string = `guest_${nanoid()}`;
-    // TODO: use User Account ID as player UUID if player is logged in
-    socket.emit("playerId", playerUUID);
-    playerId = playerUUID;
-  }
-
-  if (games.isPlayerInGame(gameId, playerId)) {
-    // rejoin game
-    games.updateSocketOfPlayer(gameId, socket.id, playerId);
-  } else if (games.isGameFull(gameId)) {
-    // game is full
-    // TODO: Show pieces for players without team (add spectator)
-    socket.emit("gameIsFull");
-    return;
-  } else if (games.isGameEmpty(gameId)) {
+  socket.join(gameId);
+  if (games.isGameEmpty(gameId)) {
     // join game first
     games.assignPlayerUUIDToYellow(gameId, playerId);
     games.assignSocketToYellow(gameId, socket.id);
@@ -149,11 +145,14 @@ function joinGame(socket: Socket, playerId: string, gameId: string): void {
     // join game second
     games.assignPlayerUUIDToRed(gameId, playerId);
     games.assignSocketToRed(gameId, socket.id);
+    // game is now Full
+    io.to(gameId).emit("buildGame");
   }
+}
 
+function rejoinGame(socket: Socket, playerId: string, gameId: string): void {
   socket.join(gameId);
-  if (games.isGameFull(gameId)) io.to(gameId).emit("buildGame");
-  else socket.emit("noOpponent");
+  games.updateSocketOfPlayer(gameId, socket.id, playerId);
 }
 
 const port = process.env.PORT || 8000;
