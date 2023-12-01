@@ -50,8 +50,9 @@ export function getWinner(
   remainingPlayerTimeYellow: number,
   remainingPlayerTimeRed: number
 ): string {
-  if (remainingPlayerTimeYellow <= 0) return "red";
-  if (remainingPlayerTimeRed <= 0) return "yellow";
+  if (remainingPlayerTimeYellow <= 0 && remainingPlayerTimeRed <= 0) return "tie";
+  else if (remainingPlayerTimeYellow <= 0) return "red";
+  else if (remainingPlayerTimeRed <= 0) return "yellow";
 
   const yellowMiner = pieces.find((piece) => piece.id === "miner" && piece.team === "yellow");
   const yellowMinerIsDead = yellowMiner !== undefined && yellowMiner.alive !== true;

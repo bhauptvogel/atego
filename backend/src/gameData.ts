@@ -19,8 +19,8 @@ export class GameService {
       playerUUIDRed: null,
       yellowPlayerReady: false,
       redPlayerReady: false,
-      yellowPlayerTime: 300,
-      redPlayerTime: 300,
+      yellowPlayerTime: 180,
+      redPlayerTime: 180,
       turn: "yellow",
       pieces: [],
       started: false,
@@ -61,8 +61,8 @@ export class GameService {
 
   getAmountOfPlayersInGame(gameId: string): number {
     let output = 0;
-    if(this.getGameById(gameId).socketIdYellow !== null) output++;
-    if(this.getGameById(gameId).socketIdRed !== null) output++;
+    if (this.getGameById(gameId).socketIdYellow !== null) output++;
+    if (this.getGameById(gameId).socketIdRed !== null) output++;
     return output;
   }
 
@@ -91,6 +91,13 @@ export class GameService {
 
   startGame(gameId: string): void {
     this.getGameById(gameId).started = true;
+  }
+
+  updateActivePlayerTime(gameId: string, time: number) {
+    const game: Game = this.getGameById(gameId);
+    if (game.turn === "yellow") game.yellowPlayerTime += time;
+    else if (game.turn === "red") game.redPlayerTime += time;
+    else throw new Error("Player turn not specified in changePlayerTime");
   }
 
   updateSocketOfPlayer(gameId: string, socketId: string, playerUUID: string) {

@@ -70,6 +70,13 @@ io.on("connection", (socket: Socket) => {
   socket.on("allPiecesPlaced", (pieces: Piece[]) => handleAllPiecesPlaced(pieces, socket.id));
 
   socket.on("disconnect", () => handleDisconnect(socket.id));
+
+  socket.on("getPlayerTime", (gameId) =>
+    socket.emit("clockUpdate", {
+      yellow: games.getRemainingPlayerTime(gameId, "yellow"),
+      red: games.getRemainingPlayerTime(gameId, "yellow"),
+    })
+  );
 });
 
 function handlePieceMoved(move: Move, socketId: string): void {
@@ -156,6 +163,30 @@ function rejoinGame(socket: Socket, playerId: string, gameId: string): void {
   socket.join(gameId);
   games.updateSocketOfPlayer(gameId, socket.id, playerId);
 }
+
+function updateClock() {
+  for (const gameId of games.getAllGameIds()) {
+    if (games.allPlayersReady(gameId)) {
+      games.updateActivePlayerTime(gameId, -1);
+      const remainingPlayerTimeYellow = games.getRemainingPlayerTime(gameId, "yellow");
+      const remainingPlayerTimeRed = games.getRemainingPlayerTime(gameId, "red");
+      io.to(gameId).emit("clockUpdate", {
+        yellow: remainingPlayerTimeYellow,
+        red: remainingPlayerTimeRed,
+      });
+      let gameOver: string | null = null;
+      if (remainingPlayerTimeRed <= 0 && remainingPlayerTimeYellow <= 0) gameOver = "tie";
+      else if (remainingPlayerTimeYellow <= 0) gameOver = "red";
+      else if (remainingPlayerTimeRed <= 0) gameOver = "yellow";
+      if (gameOver != null) {
+        io.to(gameId).emit("gameOver", gameOver);
+        games.gameOver(gameId);
+      }
+    }
+  }
+}
+
+setInterval(updateClock, 1000);
 
 const port = process.env.PORT || 8000;
 server.listen(port, () => {
