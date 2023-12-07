@@ -71,6 +71,13 @@
       });
   }
 
+  let iconCopy = "fa-link";
+  function copyLinkToClipBoard() {
+    navigator.clipboard.writeText($page.url.href);
+    console.log("tes");
+    iconCopy = "fa-check";
+  }
+
   onMount(() => main());
 </script>
 
@@ -91,9 +98,7 @@
       To invite someone to play, give this URL:
       <div class="link-container">
         <input readonly type="url" value={$page.url.href} />
-        <button on:click={() => navigator.clipboard.writeText($page.url.href)}
-          ><i class="fas fa-link"></i></button
-        >
+        <button on:click={() => copyLinkToClipBoard()}><i class="fas {iconCopy}"></i></button>
       </div>
       The first person to come to this URL will play with you.
     </div>
@@ -171,6 +176,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
+  }
+
+  .fas {
+    width: 24px;
   }
 
   //   .game {
