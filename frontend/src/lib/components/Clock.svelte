@@ -8,6 +8,7 @@
   let heroPlayerTime: number = 60; // in seconds
   let enemyPlayerTime: number = 60; // in seconds
   let heroTeam: string = "";
+  let clockActive: boolean = true;
 
   let turn: string = "";
 
@@ -17,6 +18,7 @@
     heroPlayerTime = heroTeam === "yellow" ? playerTime.yellow : playerTime.red;
     enemyPlayerTime = heroTeam === "yellow" ? playerTime.red : playerTime.yellow;
   });
+  socket.on("deactivateClock", () => (clockActive = false));
 
   $: heroPlayerMinutes = Math.floor(heroPlayerTime / 60);
   $: heroPlayerSeconds = Math.floor(heroPlayerTime % 60)
@@ -37,11 +39,23 @@
 
 <div class="game-clock">
   <div class="time player-enemy">
-    <span class="timer {activeEnemy}">{enemyPlayerMinutes}:{enemyPlayerSeconds}</span>
+    <span class="timer {activeEnemy} clock-{clockActive}">
+      {#if clockActive}
+        {enemyPlayerMinutes}:{enemyPlayerSeconds}
+      {:else}
+        Waiting...
+      {/if}
+    </span>
     <span class="label">{enemyTeamLabel}</span>
   </div>
   <div class="time player-hero">
-    <span class="timer {activeHero}">{heroPlayerMinutes}:{heroPlayerSeconds}</span>
+    <span class="timer {activeHero} clock-{clockActive}">
+      {#if clockActive}
+        {heroPlayerMinutes}:{heroPlayerSeconds}
+      {:else}
+        Your Turn
+      {/if}
+    </span>
     <span class="label">{heroTeamLabel}</span>
   </div>
 </div>
@@ -49,7 +63,7 @@
 <style lang="scss">
   .game-clock {
     position: absolute;
-    left: calc(50% - 768px / 2 - 150px);
+    left: calc(50% - 768px / 2 - 160px);
     font-family: Arial, Helvetica, sans-serif;
     padding: 15px;
     border: 0 none;
@@ -75,20 +89,24 @@
   }
 
   .timer {
-    font-size: 2em;
     color: var(--color--primary);
+    font-size: 1.8rem;
+  }
+  .clock-false {
+    color: var(--color--component-darker);
+    font-size: 1.4rem;
   }
 
   .label {
-    font-size: 1em;
+    font-size: 0.9rem;
     color: var(--color--unselected);
   }
 
   .active-yellow {
-    color: yellow;
+    color: var(--color--team-yellow);
   }
 
   .active-red {
-    color: red;
+    color: var(--color--team-red);
   }
 </style>

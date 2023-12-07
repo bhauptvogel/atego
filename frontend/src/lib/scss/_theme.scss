@@ -6,7 +6,19 @@
   --color--component-brighter: #373a3e;
   --color--component-darker: #161719;
   --color--button-active: #5f606a;
+  --color--atego-black: #141414;
 
+  --color--team-red: #DE3034;
+  --color--team-yellow: #FEBE00;
+
+}
+
+
+@font-face {
+    font-family: 'Forma';
+    font-style: normal;
+    font-weight: 800;
+    src: url('/fonts/Forma/FormaDJRDisplay-Black-Testing.ttf') format('opentype');
 }
 
 :root {
