@@ -6,6 +6,7 @@
   import Cookies from "js-cookie";
   import io, { Socket } from "socket.io-client";
   import { tick } from "svelte";
+  import Clock from "$lib/components/Clock.svelte";
 
   enum GameStatus {
     gameDoesNotExist,
@@ -16,6 +17,7 @@
   }
 
   let status: GameStatus = GameStatus.loading;
+  let socket: Socket;
 
   function setPlayerIdCookie(playerId: string): void {
     Cookies.set("playerId", playerId, { expires: 7 });
@@ -25,7 +27,7 @@
     return Cookies.get("playerId");
   }
 
-  async function renderGame(pageId: string, socket: Socket) {
+  async function renderGame(pageId: string) {
     status = GameStatus.gameHasStarted;
     const playerId = getPlayerIdFromCookie();
     if (playerId != undefined) await tick().then(() => buildGame(pageId, playerId, socket));
@@ -47,20 +49,20 @@
           if (getPlayerIdFromCookie() === undefined) setPlayerIdCookie(res.data.playerUUID);
           if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
             throw new Error("VITE_SOCKET_ADRESS not defined");
-          const socket: Socket = io(import.meta.env.VITE_SOCKET_ADRESS);
+          socket = io(import.meta.env.VITE_SOCKET_ADRESS);
           socket.on("connect", () => console.log(`Successfully connected to the server!`));
 
           if (res.data.playersInGame === 0) {
             status = GameStatus.gameHasNoOpponent;
             socket.emit("joinGame", gameId, res.data.playerUUID);
-            socket.on("buildGame", () => renderGame(gameId, socket));
+            socket.on("buildGame", () => renderGame(gameId));
           } else if (res.data.playersInGame === 1) {
             socket.emit("joinGame", gameId, res.data.playerUUID);
-            renderGame(gameId, socket);
+            renderGame(gameId);
           } else if (res.data.playersInGame === 2) {
             if (res.data.playerIdInGame == true) {
               socket.emit("rejoinGame", gameId, res.data.playerUUID);
-              renderGame(gameId, socket);
+              renderGame(gameId);
             } else {
               status = GameStatus.gameIsAlreadyFull;
             }
@@ -97,7 +99,9 @@
     </div>
   </div>
 {:else if status == GameStatus.gameHasStarted}
-  <div class="game">
+  <div class="game-content">
+    <Clock {socket} gameId={$page.params.gameId} />
+
     <div class="game-container">
       <canvas id="villainCharacterCanvas" width="768" height="96" />
       <canvas id="gameCanvas" width="512" height="640" />
@@ -122,7 +126,7 @@
 
   .invite-container {
     padding: 20px 20px;
-    background-color: var(--color--component-background-2);
+    background-color: var(--color--component-brighter);
     border: 0 none;
     border-radius: 0.25rem;
     //   border-color: var(--color--unselected);
@@ -136,7 +140,7 @@
   input {
     font-size: large;
     padding: 0.5rem;
-    background-color: var(--color--component-background);
+    background-color: var(--color--component);
     color: var(--color--primary);
     border: 1px solid;
     border-radius: 0.25rem;
@@ -163,9 +167,15 @@
     justify-content: center;
   }
 
-  .game {
+  .game-content {
     display: flex;
     justify-content: center;
     align-items: center;
   }
+
+  //   .game {
+  //     display: flex;
+  //     justify-content: center;
+  //     align-items: center;
+  //   }
 </style>

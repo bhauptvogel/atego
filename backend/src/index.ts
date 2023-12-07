@@ -21,9 +21,14 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.get("/game/new", (req, res) => {
+  console.log(req.query);
   const gameId: string = nanoid();
   // TODO: create new game in database
-  games.createNewGame(gameId);
+
+  const unlimitedTime: boolean = req.query.time == "Unlimited";
+  const time: number = Number(req.query.time);
+  const team: string = String(req.query.team);
+  games.createNewGame(gameId, time, team, unlimitedTime);
   res.send(gameId);
 });
 
@@ -70,6 +75,15 @@ io.on("connection", (socket: Socket) => {
   socket.on("allPiecesPlaced", (pieces: Piece[]) => handleAllPiecesPlaced(pieces, socket.id));
 
   socket.on("disconnect", () => handleDisconnect(socket.id));
+
+  socket.on("getPlayerTime", (gameId) => {
+    if (!games.hasGameUnlimitedTime(gameId))
+      socket.emit("clockUpdate", {
+        yellow: games.getRemainingPlayerTime(gameId, "yellow"),
+        red: games.getRemainingPlayerTime(gameId, "yellow"),
+      });
+    else socket.emit("deactivateClock");
+  });
 });
 
 function handlePieceMoved(move: Move, socketId: string): void {
@@ -136,19 +150,30 @@ function handleDisconnect(socketId: string): void {
 function joinGame(socket: Socket, playerId: string, gameId: string): void {
   if (games.isGameFull(gameId)) throw new Error(`Cannot join game ${gameId} because it is full!`);
   socket.join(gameId);
+  const firstTeam = games.getFirstTeamToJoin(gameId);
   if (games.isGameEmpty(gameId)) {
     // join game first
-    games.assignPlayerUUIDToYellow(gameId, playerId);
-    games.assignSocketToYellow(gameId, socket.id);
+    if (firstTeam == "yellow") joinYellow(socket, playerId, gameId);
+    else joinRed(socket, playerId, gameId);
     // push starting pieces to game
     games.pushPieces(gameId, getStartingPieces());
   } else {
     // join game second
-    games.assignPlayerUUIDToRed(gameId, playerId);
-    games.assignSocketToRed(gameId, socket.id);
+    if (firstTeam == "yellow") joinRed(socket, playerId, gameId);
+    else joinYellow(socket, playerId, gameId);
     // game is now Full
     io.to(gameId).emit("buildGame");
   }
+}
+
+function joinYellow(socket: Socket, playerId: string, gameId: string): void {
+  games.assignPlayerUUIDToYellow(gameId, playerId);
+  games.assignSocketToYellow(gameId, socket.id);
+}
+
+function joinRed(socket: Socket, playerId: string, gameId: string): void {
+  games.assignPlayerUUIDToRed(gameId, playerId);
+  games.assignSocketToRed(gameId, socket.id);
 }
 
 function rejoinGame(socket: Socket, playerId: string, gameId: string): void {
@@ -156,6 +181,30 @@ function rejoinGame(socket: Socket, playerId: string, gameId: string): void {
   socket.join(gameId);
   games.updateSocketOfPlayer(gameId, socket.id, playerId);
 }
+
+function updateClock() {
+  for (const gameId of games.getAllGameIds()) {
+    if (games.allPlayersReady(gameId) && !games.hasGameUnlimitedTime(gameId)) {
+      games.updateActivePlayerTime(gameId, -1);
+      const remainingPlayerTimeYellow = games.getRemainingPlayerTime(gameId, "yellow");
+      const remainingPlayerTimeRed = games.getRemainingPlayerTime(gameId, "red");
+      io.to(gameId).emit("clockUpdate", {
+        yellow: remainingPlayerTimeYellow,
+        red: remainingPlayerTimeRed,
+      });
+      let gameOver: string | null = null;
+      if (remainingPlayerTimeRed <= 0 && remainingPlayerTimeYellow <= 0) gameOver = "tie";
+      else if (remainingPlayerTimeYellow <= 0) gameOver = "red";
+      else if (remainingPlayerTimeRed <= 0) gameOver = "yellow";
+      if (gameOver != null) {
+        io.to(gameId).emit("gameOver", gameOver);
+        games.gameOver(gameId);
+      }
+    }
+  }
+}
+
+setInterval(updateClock, 1000);
 
 const port = process.env.PORT || 8000;
 server.listen(port, () => {

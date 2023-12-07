@@ -11,7 +11,7 @@
 
 body {
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
-  background-color: var(--color--page-background);
+  background-color: var(--color--app-background);
   margin: 0 15%;
 }
 
@@ -24,12 +24,12 @@ button {
 
   &:hover {
     background-color: var(--color--primary);
-    color: var(--color--component-background);
+    color: var(--color--component);
     cursor: pointer;
   }
 
   &:active {
     background-color: var(--color--button-active);
-    color: var(--color--page-background);
+    color: var(--color--app-background);
   }
 }

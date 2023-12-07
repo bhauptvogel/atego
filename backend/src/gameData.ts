@@ -7,20 +7,22 @@ export class GameService {
     this.allGames = [];
   }
 
-  createNewGame(gameId: string): void {
+  createNewGame(gameId: string, time: number, firstTeam: string, unlimitedTime: boolean): void {
     if (this.allGames.find((element) => element.gameId === gameId) !== undefined) {
       throw new Error(`newGame: Game with gameid ${gameId} already exists!`);
     }
     const newGame: Game = {
       gameId: gameId,
+      teamFirstToJoin: firstTeam,
       socketIdYellow: null,
       socketIdRed: null,
       playerUUIDYellow: null,
       playerUUIDRed: null,
       yellowPlayerReady: false,
       redPlayerReady: false,
-      yellowPlayerTime: 300,
-      redPlayerTime: 300,
+      unlimitedTime: unlimitedTime,
+      yellowPlayerTime: time,
+      redPlayerTime: time,
       turn: "yellow",
       pieces: [],
       started: false,
@@ -61,8 +63,8 @@ export class GameService {
 
   getAmountOfPlayersInGame(gameId: string): number {
     let output = 0;
-    if(this.getGameById(gameId).socketIdYellow !== null) output++;
-    if(this.getGameById(gameId).socketIdRed !== null) output++;
+    if (this.getGameById(gameId).socketIdYellow !== null) output++;
+    if (this.getGameById(gameId).socketIdRed !== null) output++;
     return output;
   }
 
@@ -91,6 +93,13 @@ export class GameService {
 
   startGame(gameId: string): void {
     this.getGameById(gameId).started = true;
+  }
+
+  updateActivePlayerTime(gameId: string, time: number) {
+    const game: Game = this.getGameById(gameId);
+    if (game.turn === "yellow") game.yellowPlayerTime += time;
+    else if (game.turn === "red") game.redPlayerTime += time;
+    else throw new Error("Player turn not specified in changePlayerTime");
   }
 
   updateSocketOfPlayer(gameId: string, socketId: string, playerUUID: string) {
@@ -125,6 +134,14 @@ export class GameService {
     if (socketId === game.socketIdYellow) return "yellow";
     else if (socketId === game.socketIdRed) return "red";
     else throw new Error(`Player ${socketId} is not assigned to team!`);
+  }
+
+  getFirstTeamToJoin(gameId: string): string {
+    return this.getGameById(gameId).teamFirstToJoin;
+  }
+
+  hasGameUnlimitedTime(gameId: string): boolean {
+    return this.getGameById(gameId).unlimitedTime;
   }
 
   socketInGame(socketId: string): boolean {
