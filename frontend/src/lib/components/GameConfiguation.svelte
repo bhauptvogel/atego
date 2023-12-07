@@ -28,7 +28,7 @@
   <div class="modal">
     <div class="content">
       <div class="button-anchor">
-        <div class="close-button" on:click={() => dispatch("close")}>&times;</div>
+        <button class="close-button" on:click={() => dispatch("close")}>&times;</button>
       </div>
       <div class="modal-content">
         <h1>Play with a friend</h1>
@@ -97,6 +97,7 @@
     z-index: 111;
     width: 24px;
     height: 24px;
+    color: var(--color--primary);
     background: var(--color--component-darker);
     transform: translate(14px, -14px);
     border-radius: 50%;

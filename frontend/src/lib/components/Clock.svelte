@@ -5,8 +5,8 @@
   export let socket: Socket;
   export let gameId: string;
 
-  let heroPlayerTime: number = 60; // in seconds
-  let enemyPlayerTime: number = 60; // in seconds
+  let heroPlayerTime: number = 0; // in seconds
+  let enemyPlayerTime: number = 0; // in seconds
   let heroTeam: string = "";
   let clockActive: boolean = true;
 

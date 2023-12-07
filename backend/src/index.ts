@@ -13,6 +13,7 @@ if (process.env.NODE_ENV !== "production") dotenv.config();
 const games: GameService = new GameService();
 const app: Application = express();
 const server = createServer(app);
+const origins = process.env.ORIGIN === undefined ? [] : process.env.ORIGIN.split(' ');
 
 app.use(cors());
 
@@ -56,7 +57,7 @@ app.get("/:gameId", (req, res) => {
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.ORIGIN,
+    origin: origins,
     methods: ["GET", "POST"],
   },
 });
