@@ -1,9 +1,8 @@
 @import "$lib/scss/_theme.scss";
 @import "$lib/scss/_mixins.scss";
 
-
-  html,
-  body {
+html,
+body {
   height: 100%;
   margin: 0px;
   padding: 0px;
@@ -20,7 +19,6 @@ button {
   font-weight: 600;
   font-size: 16px;
   color: var(--color--primary);
-  
 
   &:hover {
     background-color: var(--color--primary);
