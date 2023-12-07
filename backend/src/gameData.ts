@@ -7,20 +7,22 @@ export class GameService {
     this.allGames = [];
   }
 
-  createNewGame(gameId: string): void {
+  createNewGame(gameId: string, time: number, firstTeam: string, unlimitedTime: boolean): void {
     if (this.allGames.find((element) => element.gameId === gameId) !== undefined) {
       throw new Error(`newGame: Game with gameid ${gameId} already exists!`);
     }
     const newGame: Game = {
       gameId: gameId,
+      teamFirstToJoin: firstTeam,
       socketIdYellow: null,
       socketIdRed: null,
       playerUUIDYellow: null,
       playerUUIDRed: null,
       yellowPlayerReady: false,
       redPlayerReady: false,
-      yellowPlayerTime: 180,
-      redPlayerTime: 180,
+      unlimitedTime: unlimitedTime,
+      yellowPlayerTime: time,
+      redPlayerTime: time,
       turn: "yellow",
       pieces: [],
       started: false,
@@ -132,6 +134,14 @@ export class GameService {
     if (socketId === game.socketIdYellow) return "yellow";
     else if (socketId === game.socketIdRed) return "red";
     else throw new Error(`Player ${socketId} is not assigned to team!`);
+  }
+
+  getFirstTeamToJoin(gameId: string): string {
+    return this.getGameById(gameId).teamFirstToJoin;
+  }
+
+  hasGameUnlimitedTime(gameId: string): boolean {
+    return this.getGameById(gameId).unlimitedTime;
   }
 
   socketInGame(socketId: string): boolean {

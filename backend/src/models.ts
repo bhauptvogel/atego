@@ -18,12 +18,14 @@ export interface Move {
 
 export interface Game {
   gameId: string;
+  teamFirstToJoin: string;
   socketIdYellow: string | null;
   socketIdRed: string | null;
   playerUUIDYellow: string | null;
   playerUUIDRed: string | null;
   yellowPlayerReady: boolean;
   redPlayerReady: boolean;
+  unlimitedTime: boolean;
   yellowPlayerTime: number;
   redPlayerTime: number;
   turn: string;
