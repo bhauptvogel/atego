@@ -8,13 +8,14 @@
   let heroPlayerTime: number = 0; // in seconds
   let enemyPlayerTime: number = 0; // in seconds
   let heroTeam: string = "";
-  let clockActive: boolean = true;
+  let clockActive: boolean;
 
   let turn: string = "";
 
   socket.on("assignTeam", (assignedTeam: string) => (heroTeam = assignedTeam));
   socket.on("updatePlayerTurn", (updatedTurn: string) => (turn = updatedTurn));
   socket.on("clockUpdate", (playerTime) => {
+    clockActive = true;
     heroPlayerTime = heroTeam === "yellow" ? playerTime.yellow : playerTime.red;
     enemyPlayerTime = heroTeam === "yellow" ? playerTime.red : playerTime.yellow;
   });
@@ -39,7 +40,8 @@
 
 <div class="game-clock">
   <div class="time player-enemy">
-    <span class="timer {activeEnemy} clock-{clockActive}">
+    <!-- TODO: Refactor html, css and make invisible until loaded -->
+    <span class="timer {activeEnemy} clock-active-{clockActive}">
       {#if clockActive}
         {enemyPlayerMinutes}:{enemyPlayerSeconds}
       {:else}
@@ -49,7 +51,7 @@
     <span class="label">{enemyTeamLabel}</span>
   </div>
   <div class="time player-hero">
-    <span class="timer {activeHero} clock-{clockActive}">
+    <span class="timer {activeHero} clock-active-{clockActive}">
       {#if clockActive}
         {heroPlayerMinutes}:{heroPlayerSeconds}
       {:else}
@@ -89,12 +91,12 @@
   }
 
   .timer {
-    color: var(--color--primary);
-    font-size: 1.8rem;
-  }
-  .clock-false {
     color: var(--color--component-darker);
     font-size: 1.4rem;
+  }
+  .clock-active-true {
+    color: var(--color--primary);
+    font-size: 1.8rem;
   }
 
   .label {

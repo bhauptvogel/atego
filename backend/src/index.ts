@@ -13,7 +13,7 @@ if (process.env.NODE_ENV !== "production") dotenv.config();
 const games: GameService = new GameService();
 const app: Application = express();
 const server = createServer(app);
-const origins = process.env.ORIGIN === undefined ? [] : process.env.ORIGIN.split(' ');
+const origins = process.env.ORIGIN === undefined ? [] : process.env.ORIGIN.split(" ");
 
 app.use(cors());
 
@@ -22,7 +22,6 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.get("/game/new", (req, res) => {
-  console.log(req.query);
   const gameId: string = nanoid();
   // TODO: create new game in database
 
@@ -31,28 +30,6 @@ app.get("/game/new", (req, res) => {
   const team: string = String(req.query.team);
   games.createNewGame(gameId, time, team, unlimitedTime);
   res.send(gameId);
-});
-
-app.get("/:gameId", (req, res) => {
-  const gameId = req.params.gameId;
-
-  // TODO: look if game exists in *db*
-  // TODO: See if player is in game
-  if (games.gameIdExists(gameId) == false) {
-    res.send({ gameExists: false });
-    return;
-  }
-
-  // TODO: use User Account ID as player UUID if player is logged in
-  let playerId = req.headers.playerid?.toString();
-  if (playerId === undefined) playerId = `guest_${nanoid()}`;
-
-  res.send({
-    gameExists: true,
-    playersInGame: games.getAmountOfPlayersInGame(gameId),
-    playerUUID: playerId,
-    playerIdInGame: games.isPlayerInGame(gameId, playerId),
-  });
 });
 
 const io = new Server(server, {
@@ -65,9 +42,28 @@ const io = new Server(server, {
 io.on("connection", (socket: Socket) => {
   console.log(`New connection: Socket ${socket.id}`);
 
-  socket.on("joinGame", (gameId, playerId) => joinGame(socket, playerId, gameId));
+  socket.on("joinGame", (gameId: string, playerId: string | null) => {
+    // TODO: look if game exists in *db*
+    // TODO: See if player is in game
+    if (games.gameIdExists(gameId) == false) {
+      socket.emit("gameDoesNotExist");
+      throw new Error(`Cannot join game ${gameId} because it does not exist!`);
+    }
 
-  socket.on("rejoinGame", (gameId, playerId) => rejoinGame(socket, playerId, gameId));
+    if (playerId === null) {
+      playerId = `guest_${nanoid()}`;
+      socket.emit("newPlayerId", playerId);
+    }
+
+    const amountOfPlayers = games.getAmountOfPlayersInGame(gameId);
+    const playerIdInGame = games.isPlayerInGame(gameId, playerId);
+
+    if (amountOfPlayers < 2) socket.emit("waitingForOpponent");
+    else if (amountOfPlayers >= 2 && !playerIdInGame) socket.emit("gameIsFull");
+
+    if (playerIdInGame) rejoinGame(socket, playerId, gameId);
+    else joinNewGame(socket, playerId, gameId);
+  });
 
   socket.on("socketReady", (gameId) => sendGameData(gameId, socket));
 
@@ -148,7 +144,7 @@ function handleDisconnect(socketId: string): void {
   }
 }
 
-function joinGame(socket: Socket, playerId: string, gameId: string): void {
+function joinNewGame(socket: Socket, playerId: string, gameId: string): void {
   if (games.isGameFull(gameId)) throw new Error(`Cannot join game ${gameId} because it is full!`);
   socket.join(gameId);
   const firstTeam = games.getFirstTeamToJoin(gameId);
@@ -181,6 +177,7 @@ function rejoinGame(socket: Socket, playerId: string, gameId: string): void {
   if (!games.isGameFull(gameId)) throw new Error(`Cannot rejoin game ${gameId} which is not full!`);
   socket.join(gameId);
   games.updateSocketOfPlayer(gameId, socket.id, playerId);
+  socket.emit("buildGame");
 }
 
 function updateClock() {

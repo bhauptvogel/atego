@@ -64,15 +64,11 @@ function handleResourcesLoaded(): void {
 }
 
 function connectToServer(): void {
-  //   if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
-  //     throw new Error("VITE_SOCKET_ADRESS not defined");
-  //   socket = io(import.meta.env.VITE_SOCKET_ADRESS);
+    // if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
+    //   throw new Error("VITE_SOCKET_ADRESS not defined");
+    // socket = io(import.meta.env.VITE_SOCKET_ADRESS);
   socket.emit("socketReady", gameId);
 
-  socket.off("playerId");
-  socket.off("buildGame");
-  socket.off("gameIsFull");
-  socket.off("noOpponent");
   socket.on("updatePieces", (pieces) => updatePieces(pieces));
   socket.on("updatePlayerTurn", (updatedTurn: string) => (state.currentTurn = updatedTurn));
   socket.on("assignTeam", (assignedTeam: string) => (state.heroTeam = assignedTeam));
