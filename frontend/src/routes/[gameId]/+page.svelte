@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import axios from "axios";
   import { onMount } from "svelte";
   import { buildGame } from "$lib/game/main";
   import Cookies from "js-cookie";
@@ -18,17 +17,17 @@
   let status: GameStatus = GameStatus.loading;
   let socket: Socket;
 
-  function setPlayerIdCookie(playerId: string): void {
-    Cookies.set("playerId", playerId, { expires: 7 });
+  function setUserTokenCookie(playerId: string): void {
+    Cookies.set("user", playerId, { expires: 7 });
   }
 
-  function getPlayerIdFromCookie(): string | undefined {
-    return Cookies.get("playerId");
+  function getUserTokenCookie(): string | undefined {
+    return Cookies.get("user");
   }
 
   async function renderGame(pageId: string) {
     status = GameStatus.gameHasStarted;
-    const playerId = getPlayerIdFromCookie();
+    const playerId = getUserTokenCookie();
     if (playerId != undefined) await tick().then(() => buildGame(pageId, playerId, socket));
     else throw new Error("PlayerId is undefined");
   }
@@ -41,9 +40,9 @@
     socket = io(import.meta.env.VITE_SOCKET_ADRESS);
     // socket.on("connect", () => console.log(`Successfully connected to the server!`));
 
-    socket.emit("joinGame", gameId, getPlayerIdFromCookie());
+    socket.emit("joinGame", gameId, getUserTokenCookie());
 
-    socket.on("newPlayerId", (playerId) => setPlayerIdCookie(playerId));
+    socket.on("guestPlayerId", (playerId) => setUserTokenCookie(playerId));
     socket.on("gameDoesNotExist", () => (status = GameStatus.gameDoesNotExist));
     socket.on("gameIsFull", () => (status = GameStatus.gameIsAlreadyFull));
     socket.on("waitingForOpponent", () => (status = GameStatus.gameHasNoOpponent));
@@ -53,7 +52,6 @@
   let iconCopy = "fa-link";
   function copyLinkToClipBoard() {
     navigator.clipboard.writeText($page.url.href);
-    console.log("tes");
     iconCopy = "fa-check";
   }
 

@@ -6,7 +6,7 @@
 <div class="application">
   <header>
     <a class="logo" href="/">ATEGO</a>
-    <!-- <a class="account icon" href="/login"><i class="fas fa-fw fa-user"></i></a> -->
+    <a class="account icon" href="/login"><i class="fas fa-fw fa-user"></i></a>
   </header>
 
   <main>

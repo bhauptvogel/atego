@@ -133,3 +133,5 @@ dist
 next-up.md
 public/assets/changer.py
 public/assets/ideas
+
+tmux-start.sh

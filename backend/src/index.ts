@@ -7,6 +7,9 @@ import dotenv from "dotenv";
 import { GameService } from "./gameData";
 import { Piece, Move } from "./models";
 import { movePiece, getStartingPieces, isGameOver, getWinner } from "./gameLogic";
+import authRoutes from "./auth";
+import mongoose from "mongoose";
+import { generateToken, verifyToken } from "./jwt-utils";
 
 if (process.env.NODE_ENV !== "production") dotenv.config();
 
@@ -15,7 +18,20 @@ const app: Application = express();
 const server = createServer(app);
 const origins = process.env.ORIGIN === undefined ? [] : process.env.ORIGIN.split(" ");
 
+const atlasURI = `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@cluster0.ght2591.mongodb.net/?retryWrites=true&w=majority`;
+
+mongoose
+  .connect(atlasURI)
+  .then(() => {
+    console.log("Connected to MongoDB!");
+  })
+  .catch((err) => {
+    console.error("Error connecting to MongoDB:", err);
+  });
+
 app.use(cors());
+app.use(express.json());
+app.use(authRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Welcome to Express & TypeScript Server");
@@ -42,17 +58,23 @@ const io = new Server(server, {
 io.on("connection", (socket: Socket) => {
   console.log(`New connection: Socket ${socket.id}`);
 
-  socket.on("joinGame", (gameId: string, playerId: string | null) => {
+  socket.on("joinGame", (gameId: string, userToken: string) => {
     // TODO: look if game exists in *db*
     // TODO: See if player is in game
     if (games.gameIdExists(gameId) == false) {
       socket.emit("gameDoesNotExist");
       throw new Error(`Cannot join game ${gameId} because it does not exist!`);
     }
-
-    if (playerId === null) {
-      playerId = `guest_${nanoid()}`;
-      socket.emit("newPlayerId", playerId);
+    let playerId = "";
+    if (userToken == null) playerId = getGuestPlayerId(socket);
+    else if (userToken.startsWith("guest")) playerId = userToken;
+    else {
+      const payload = verifyToken(userToken);
+      if (typeof payload == "object") {
+        playerId = payload.userId;
+      } else {
+        throw new Error("Payload is not an object");
+      }
     }
 
     const amountOfPlayers = games.getAmountOfPlayersInGame(gameId);
@@ -82,6 +104,12 @@ io.on("connection", (socket: Socket) => {
     else socket.emit("deactivateClock");
   });
 });
+
+function getGuestPlayerId(socket: Socket): string {
+  const playerId = `guest_${nanoid()}`;
+  socket.emit("guestPlayerId", playerId);
+  return playerId;
+}
 
 function handlePieceMoved(move: Move, socketId: string): void {
   const gameId: string = games.getGameIdBySocketId(socketId);
