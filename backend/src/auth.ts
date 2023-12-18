@@ -21,7 +21,9 @@ router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      return res.status(401).send("User does not exist");
+    } else if (!(await bcrypt.compare(password, user.password))) {
       return res.status(401).send("Authentication failed");
     }
     const token = generateToken(user._id.toString());

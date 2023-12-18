@@ -1,27 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import axios from "axios";
-  import Cookies from "js-cookie";
+  import type { PageData } from "./$types";
+  export let data: PageData;
 
   let username = "";
 
-  function getUserTokenCookie(): string {
-    const token = Cookies.get("user");
-    if (token === undefined) return "";
-    else return token;
-  }
-
-  onMount(async function getAccount() {
-    const token: string = getUserTokenCookie();
-    await axios
-      .get(`${import.meta.env.VITE_SOCKET_ADRESS}/account`, {
-        headers: {
-          token: token,
-        },
-      })
-      .then((res) => {
-        username = res.data;
-      });
+  onMount(() => {
+    if ("data" in data) username = String(data.data);
   });
 </script>
 

@@ -12,6 +12,7 @@
   let passwordLogin: string = "";
 
   let registerErrorMessage: string = "";
+  let loginErrorMessage: string = "";
 
   function setUserTokenCookie(token: string): void {
     Cookies.set("user", token, { expires: 7 });
@@ -38,6 +39,17 @@
     return true;
   }
 
+  function isLoginValid(): boolean {
+    if (usernameLogin === "") {
+      loginErrorMessage = "Username is empty!";
+      return false;
+    } else if (passwordLogin == "") {
+      loginErrorMessage = "Password is empty!";
+      return false;
+    }
+    return true;
+  }
+
   async function register() {
     registerErrorMessage = "";
     if (isRegistrationValid()) {
@@ -52,31 +64,47 @@
           goto("account");
         })
         .catch((error) => {
-          console.log(error);
           if (error.response.data.code === 11000) registerErrorMessage = "Username already taken!";
         });
     }
   }
 
   async function login() {
-    await axios
-      .post(`${import.meta.env.VITE_SOCKET_ADRESS}/login`, {
-        username: usernameLogin,
-        password: passwordLogin,
-      })
-      .then((res) => {
-        setUserTokenCookie(res.data.token);
-        goto("account");
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    loginErrorMessage = "";
+    if (isLoginValid()) {
+      await axios
+        .post(`${import.meta.env.VITE_SOCKET_ADRESS}/login`, {
+          username: usernameLogin,
+          password: passwordLogin,
+        })
+        .then((res) => {
+          setUserTokenCookie(res.data.token);
+          goto("account");
+        })
+        .catch((error) => {
+          if (error.response.data === "Authentication failed")
+            loginErrorMessage = "Password is wrong!";
+          else if (error.response.data === "User does not exist")
+            loginErrorMessage = "Username does not exist!";
+        });
+    }
   }
 
-  onMount(() => {
+  export async function load() {
+    console.log("load");
     const token = getUserTokenCookie();
-    if (token != undefined && !token.startsWith("guest")) goto("account");
-  });
+    if (token != undefined && !token.startsWith("guest")) {
+      await axios
+        .get(`${import.meta.env.VITE_SOCKET_ADRESS}/account`, {
+          headers: {
+            token: token,
+          },
+        })
+        .then((res) => {
+          goto("account");
+        });
+    }
+  }
 </script>
 
 <div class="auth-container">
@@ -109,6 +137,9 @@
     <input class="input-field" type="text" bind:value={usernameLogin} placeholder="Username" />
     <input class="input-field" type="password" bind:value={passwordLogin} placeholder="Password" />
     <button on:click={login}>Login</button>
+    <div style="margin-top: 10px; color: red;">
+      {loginErrorMessage}
+    </div>
   </div>
 </div>
 
