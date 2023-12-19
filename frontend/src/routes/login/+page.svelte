@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { goto, invalidate, invalidateAll } from "$app/navigation";
   import axios from "axios";
   import Cookies from "js-cookie";
   import { onMount } from "svelte";
@@ -61,10 +61,12 @@
         })
         .then((res) => {
           setUserTokenCookie(res.data.token);
+          invalidateAll();
           goto("account");
         })
         .catch((error) => {
-          if (error.response.data.code === 11000) registerErrorMessage = "Username already taken!";
+          if (error.response.data.code === 11000)
+            registerErrorMessage = "Username already taken!";
         });
     }
   }
@@ -79,6 +81,7 @@
         })
         .then((res) => {
           setUserTokenCookie(res.data.token);
+          invalidateAll();
           goto("account");
         })
         .catch((error) => {
@@ -134,8 +137,18 @@
     </div>
   </div>
   <div class="login-container">
-    <input class="input-field" type="text" bind:value={usernameLogin} placeholder="Username" />
-    <input class="input-field" type="password" bind:value={passwordLogin} placeholder="Password" />
+    <input
+      class="input-field"
+      type="text"
+      bind:value={usernameLogin}
+      placeholder="Username"
+    />
+    <input
+      class="input-field"
+      type="password"
+      bind:value={passwordLogin}
+      placeholder="Password"
+    />
     <button on:click={login}>Login</button>
     <div style="margin-top: 10px; color: red;">
       {loginErrorMessage}

@@ -1,12 +1,24 @@
 <script lang="ts">
   import "$lib/scss/global.scss";
   import "@fortawesome/fontawesome-free/css/all.min.css";
+  import type { LayoutData } from "./$types";
+
+  export let data: LayoutData;
+
+  $: username =
+    "username" in data && data.username != null ? data.username : "";
+  $: accountRef =
+    "username" in data && data.username != null ? "/account" : "/login";
+  $: icon = "username" in data && data.username != null ? "solid" : "regular";
 </script>
 
 <div class="application">
   <header>
     <a class="logo" href="/">ATEGO</a>
-    <a class="account icon" href="/login"><i class="fas fa-fw fa-user"></i></a>
+    <a class="account icon" href={accountRef}>
+      <i class="fa-{icon} fa-fw fa-user"></i>
+      <div class="username">{username}</div>
+    </a>
   </header>
 
   <main>
@@ -46,8 +58,14 @@
       }
     }
     .account {
+      display: flex;
       align-self: flex-end;
+      font-size: 1.2rem;
     }
+  }
+
+  .username {
+    padding-left: 5px;
   }
 
   main {

@@ -42,7 +42,7 @@ router.get("/account", async (req, res) => {
       return res.status(401).send("Authentication failed");
     const userId = decoded.userId;
     const user = await User.findById(userId);
-    res.send(user?.username);
+    res.send(String(user?.username));
   } catch (error) {
     res.status(500).send(error);
   }
