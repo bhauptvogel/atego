@@ -67,6 +67,10 @@
         .catch((error) => {
           if (error.response.data.code === 11000)
             registerErrorMessage = "Username already taken!";
+          else {
+            console.error(error);
+            registerErrorMessage = "Registration failed!"
+          }
         });
     }
   }
@@ -89,6 +93,10 @@
             loginErrorMessage = "Password is wrong!";
           else if (error.response.data === "User does not exist")
             loginErrorMessage = "Username does not exist!";
+          else {
+            console.error(error);
+            loginErrorMessage = "Login failed!"
+          }
         });
     }
   }
