@@ -1,5 +1,5 @@
-@import "$lib/scss/_theme.scss";
-@import "$lib/scss/_mixins.scss";
+@use "$lib/scss/theme" as theme;
+@use "$lib/scss/mixins" as mixins;
 
 html,
 body {
@@ -15,7 +15,7 @@ body {
 }
 
 button {
-  @include container;
+  @include mixins.container;
   font-weight: 600;
   font-size: 16px;
   color: var(--color--primary);

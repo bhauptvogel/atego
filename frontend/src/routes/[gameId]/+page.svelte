@@ -118,7 +118,7 @@
 <!-- TODO: Render Loading icon (on else) -->
 
 <style lang="scss">
-  @import "$lib/scss/_mixins.scss";
+  @use "$lib/scss/mixins" as *;
   .challenge-container {
     @include container;
     padding: 1rem 4rem 4rem 4rem;
