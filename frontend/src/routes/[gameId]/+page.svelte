@@ -1,4 +1,6 @@
 <script lang="ts">
+  export const prerender = false;
+
   import { page } from "$app/stores";
   import axios from "axios";
   import { onMount } from "svelte";
