@@ -147,7 +147,7 @@ export class GameService {
   socketInGame(socketId: string): boolean {
     return (
       this.allGames.find(
-        (element) => element.socketIdYellow === socketId || element.socketIdYellow === socketId
+        (element) => element.socketIdYellow === socketId || element.socketIdRed === socketId
       ) !== undefined
     );
   }

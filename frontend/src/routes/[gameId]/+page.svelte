@@ -1,12 +1,10 @@
 <script lang="ts">
-  export const prerender = false;
-
   import { page } from "$app/stores";
   import axios from "axios";
   import { onMount } from "svelte";
-  import { buildGame } from "$lib/game/main";
+  import io from "socket.io-client";
+  import type { Socket } from "socket.io-client";
   import Cookies from "js-cookie";
-  import io, { Socket } from "socket.io-client";
   import { tick } from "svelte";
   import Clock from "$lib/components/Clock.svelte";
 
@@ -32,8 +30,10 @@
   async function renderGame(pageId: string) {
     status = GameStatus.gameHasStarted;
     const playerId = getPlayerIdFromCookie();
-    if (playerId != undefined) await tick().then(() => buildGame(pageId, playerId, socket));
-    else throw new Error("PlayerId is undefined");
+    if (playerId != undefined) {
+      const { buildGame } = await import("$lib/game/main");
+      await tick().then(() => buildGame(pageId, playerId, socket));
+    } else throw new Error("PlayerId is undefined");
   }
 
   async function main() {

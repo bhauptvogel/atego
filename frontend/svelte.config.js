@@ -7,27 +7,7 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-  preprocess: vitePreprocess({
-    style: {
-      css: {
-        preprocessorOptions: {
-          scss: {
-            api: "modern",
-            importer: [
-              (url) => {
-                if (url.startsWith("$lib")) {
-                  return {
-                    file: url.replace(/^\$lib/, path.join(dirname, "src", "lib")),
-                  };
-                }
-                return url;
-              },
-            ],
-          },
-        },
-      },
-    },
-  }),
+  preprocess: vitePreprocess(),
 
   kit: {
     adapter: adapter({

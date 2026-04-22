@@ -57,7 +57,7 @@ app.get("/:gameId", (req, res) => {
 
 const io = new Server(server, {
   cors: {
-    origin: origins,
+    origin: process.env.NODE_ENV === "production" ? origins : "*",
     methods: ["GET", "POST"],
   },
 });

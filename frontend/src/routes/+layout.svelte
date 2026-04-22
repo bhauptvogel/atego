@@ -25,14 +25,6 @@
     justify-content: space-between;
     display: flex;
     padding: 1.5rem;
-    .icon {
-      color: var(--color--unselected);
-      text-decoration: none;
-      font-size: 20px;
-      &:hover {
-        color: var(--color--primary);
-      }
-    }
     .logo {
       align-self: flex-start;
       text-decoration: none;
@@ -44,9 +36,6 @@
       &:hover {
         text-shadow: 0 0 0.4rem var(--color--primary);
       }
-    }
-    .account {
-      align-self: flex-end;
     }
   }
 
