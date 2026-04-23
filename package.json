@@ -2,5 +2,8 @@
   "name": "atego",
   "version": "1.0.0",
   "description": "",
-  "author": "bhauptvogel"
+  "author": "bhauptvogel",
+  "devDependencies": {
+    "@types/js-cookie": "^3.0.6"
+  }
 }

@@ -1,7 +1,10 @@
+import type { Socket } from "socket.io-client";
+
 export interface Field {
   fieldX: number;
   fieldY: number;
 }
+
 export interface gameState {
   heroTeam: string;
   gameStarted: boolean;
@@ -17,7 +20,7 @@ export interface Piece {
   alive: boolean;
 }
 
-// export interface Move {
-//   from: Field;
-//   to: Field;
-// }
+export interface Move {
+  from: Field;
+  to: Field;
+}

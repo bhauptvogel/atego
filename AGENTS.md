@@ -2,12 +2,12 @@
 
 ## Project Overview
 
-ATEGO is a 2-player strategy game similar to Stratego but with key differences:
+ATEGÓ is a 2-player strategy game similar to Stratego but with key differences:
 - **Board**: 5×4 grid (smaller than Stratego's 10×10)
 - **Pieces**: 8 per team (Yellow vs Red)
 - **Goal**: Destroy the enemy's **Bomb** using the **Miner**
 
-This is a monorepo containing both frontend and backend code for the ATEGO game.
+This is a monorepo containing both frontend and backend code for the ATEGÓ game.
 
 ## Repository Structure
 
@@ -16,40 +16,32 @@ atego/
 ├── AGENTS.md          # This file
 ├── README.md          # Brief project description
 ├── .gitignore
-├── frontend/          # SvelteKit + TypeScript frontend
+├── frontend/          # Vanilla TypeScript + Vite frontend (NO SvelteKit)
+│   ├── index.html     # Single-page entry point
 │   ├── src/
-│   │   ├── app.html
-│   │   ├── app.d.ts
-│   │   ├── routes/
-│   │   │   ├── +page.svelte         # Landing page (with loading screen)
-│   │   │   ├── +layout.svelte       # Root layout
-│   │   │   ├── [gameId]/+page.svelte # Game room page
-│   │   │   ├── login/+page.svelte
-│   │   │   └── user/[userId]/+page.svelte
-│   │   └── lib/
-│   │       ├── game/
-│   │       │   ├── main.ts          # Core game loop, Socket.IO events
-│   │       │   ├── piece.ts         # GamePiece class (movement, rendering)
-│   │       │   ├── field.ts         # Board grid drawing
-│   │       │   ├── resources.ts     # Asset loading
-│   │       │   ├── utils.ts         # Coordinate flipping for red team
-│   │       │   └── models.ts        # TypeScript interfaces
-│   │       ├── components/
-│   │       │   ├── GameConfiguation.svelte  # New game setup modal
-│   │       │   └── Clock.svelte            # Game timer display
-│   │       └── scss/
-│   │           ├── _theme.scss
-│   │           ├── _mixins.scss
-│   │           └── global.scss
+│   │   ├── main.ts           # App bootstrap, imports global styles
+│   │   ├── router.ts         # Hash-based client-side router
+│   │   ├── pages.ts          # Landing page, game room, login, user profile
+│   │   ├── vite-env.d.ts    # Vite client types
+│   │   ├── game/             # Game engine (CreateJS / EaselJS)
+│   │   │   ├── main.ts      # Core game loop, Socket.IO events
+│   │   │   ├── piece.ts     # GamePiece class (movement, rendering)
+│   │   │   ├── field.ts     # Board grid drawing
+│   │   │   ├── resources.ts # Asset loading
+│   │   │   ├── utils.ts     # Coordinate flipping for red team
+│   │   │   └── models.ts    # TypeScript interfaces
+│   │   └── styles/
+│   │       ├── global.scss   # All styles (layout, pages, modal, game, clock)
+│   │       ├── _theme.scss  # CSS custom properties, font-face
+│   │       └── _mixins.scss # Reusable SCSS mixins
 │   ├── static/
 │   │   ├── favicon.png
-│   │   ├── pieces/              # PNG images for game pieces
+│   │   ├── pieces/           # PNG images for game pieces
 │   │   └── fonts/
 │   ├── package.json
-│   ├── svelte.config.js         # SvelteKit config (static adapter)
-│   ├── vite.config.ts
+│   ├── vite.config.ts       # Vite config (NO SvelteKit plugin)
 │   ├── tsconfig.json
-│   └── .env                     # Environment variables (not in git)
+│   └── .env                  # Environment variables (not in git)
 └── backend/               # Express.js + Socket.IO backend
     ├── src/
     │   ├── index.ts         # Main server, HTTP routes, Socket events
@@ -144,17 +136,20 @@ npm run build
 
 ### Frontend (Static Site)
 
+**Why vanilla TypeScript instead of SvelteKit?**
+The frontend was rewritten from SvelteKit to vanilla TypeScript + Vite to avoid SPA routing issues on static hosting. Render's static file server could not handle dynamic routes (`/TLtBPZrrpf9M0gnePegMS`) even with `_redirects` rules. The new hash-based router (`/#/TLtBPZrrpf9M0gnePegMS`) works on any static host with zero server configuration.
+
 **Build Settings:**
 - **Build Command:** `npm install && npm run build`
 - **Publish Directory:** `build`
+- **Environment Variables:**
+  - `VITE_SOCKET_ADRESS=https://your-backend-url.onrender.com`
 
-**Environment Variables:**
-- `VITE_SOCKET_ADRESS=https://your-backend-url.onrender.com`
+**No `_redirects` file needed.** Because all routing is hash-based (`/#/gameId`), the static server always serves `index.html` for every URL. The JavaScript router handles the rest.
 
-**Important:** The frontend is configured as a static SPA (Single Page Application) with:
-- `@sveltejs/adapter-static` for static site generation
-- `fallback: 'index.html'` for client-side routing
-- Dynamic routes (`[gameId]`) use `export const prerender = false`
+**URL format in production:**
+- Create game: `https://atego-frontend.onrender.com/`
+- Share link: `https://atego-frontend.onrender.com/#/TLtBPZrrpf9M0gnePegMS`
 
 ### Backend (Web Service)
 
@@ -166,6 +161,8 @@ npm run build
 - `PORT=8000` (Render sets this automatically)
 - `ORIGIN=https://your-frontend-url.onrender.com` (for CORS)
 
+**⚠️ CRITICAL:** `ORIGIN` must be set to the **frontend** URL, not the backend URL. The backend's CORS config uses this to allow requests from the frontend.
+
 **Note:** The backend must remain a web service (not static) because:
 - Socket.IO requires an active server for WebSocket connections
 - Game state is held in-memory (`GameService` class)
@@ -174,15 +171,26 @@ npm run build
 
 ### Frontend Architecture
 
+**Framework:** Vanilla TypeScript with Vite bundler (NO Svelte, NO SvelteKit)
+
+**Routing:** Hash-based client-side router in `src/router.ts`:
+- `window.location.hash` determines the active view
+- Routes: `/#/` (landing), `/#/:gameId` (game room), `/#/login`, `/#/user/:userId`
+- No server-side routing needed — works on any static host
+
 **Rendering:** Uses CreateJS (EaselJS) with 3 HTML5 Canvases:
 - `gameCanvas` (512×640) - Main game board
 - `heroCharacterCanvas` (768×96) - Your pieces/dead pieces
 - `villainCharacterCanvas` (768×96) - Opponent's dead pieces
 
+**DOM Manipulation:** All pages rendered via vanilla TS string templates injected into `<main id="main">`. No virtual DOM framework.
+
+**Styling:** Single SCSS file `src/styles/global.scss` imported in `main.ts`. Vite processes it with the modern Sass API.
+
 **State Management:**
 - Real-time updates via Socket.IO
 - Player ID stored in cookies (js-cookie)
-- Game state managed in `main.ts`
+- Game state managed in `src/game/main.ts`
 
 **Perspective Handling:**
 - Red team sees board flipped 180° via `flipFieldXIfRed` / `flipFieldYIfRed`
@@ -205,22 +213,34 @@ npm run build
 
 ## Important Code Patterns
 
-### Adding `prerender` exports
+### Hash Router
 
-**Static pages (landing page):**
+All navigation uses the hash to avoid server 404s:
 ```typescript
-<script lang="ts">
-  export const prerender = true;
-  // ... rest of component
-</script>
+import { navigate } from "./router";
+navigate("/TLtBPZrrpf9M0gnePegMS"); // Sets window.location.hash = "#/TLtBPZrrpf9M0gnePegMS"
 ```
 
-**Dynamic pages (game rooms):**
+Links must use `/#/` prefix for the router to intercept them:
+```html
+<a href="/#/">Home</a>
+<a href="/#/login">Login</a>
+```
+
+### Page Registration
+
 ```typescript
-<script lang="ts">
-  export const prerender = false;
-  // ... rest of component
-</script>
+import { register } from "./router";
+
+register("/", async () => {
+  const main = document.getElementById("main")!;
+  main.innerHTML = `<div>...</div>`;
+});
+
+register("game", async (params) => {
+  const gameId = params?.gameId;
+  // ...
+});
 ```
 
 ### Environment Variables in Frontend
@@ -234,17 +254,17 @@ const backendUrl = import.meta.env.VITE_SOCKET_ADRESS;
 
 Use `@use` instead of `@import` (deprecated):
 ```scss
-@use "$lib/scss/mixins" as *;
+@use "./mixins" as *;
 // or
-@use "$lib/scss/mixins" as mixins;
+@use "./mixins" as mixins;
 @include mixins.container;
 ```
 
 ### Loading Screen Pattern
 
-The landing page (`+page.svelte`) implements a loading screen:
+The landing page implements a loading screen:
 1. Shows spinner with "Waiting on server to boot..."
-2. Polls backend health endpoint every 3 seconds
+2. Polls backend health endpoint every 2 seconds
 3. Shows "New Game" button once backend responds
 
 ## Common Issues & Solutions
@@ -263,12 +283,6 @@ npm install
 
 **Status:** Warnings are expected and harmless. The modern Sass API is configured in `vite.config.ts`.
 
-### Issue: Build fails with dynamic routes
-
-**Solution:** Ensure dynamic routes have `export const prerender = false`:
-- `/[gameId]/+page.svelte`
-- `/user/[userId]/+page.svelte`
-
 ### Issue: CORS errors
 
 **Solution:** Set `ORIGIN` environment variable on backend to match frontend URL.
@@ -280,6 +294,12 @@ npm install
 2. Backend is running and accessible
 3. CORS origin is configured on backend
 
+### Issue: Deep links return 404 on production
+
+**Cause (OLD):** SvelteKit dynamic routes (`/[gameId]`) required SPA redirects (`_redirects`) that didn't work on Render.
+
+**Solution (CURRENT):** The frontend now uses a hash-based router. URLs look like `/#/gameId` and never hit the server for routing. No special redirect configuration needed.
+
 ## Security Notes
 
 - **Never commit `.env` files** - they contain sensitive configuration
@@ -290,18 +310,18 @@ npm install
 ## Package Updates
 
 **⚠️ Warning:** Be cautious with updates to:
-- `@sveltejs/kit`
-- `@sveltejs/adapter-static`
 - `vite`
-- `svelte`
+- `@vitejs/plugin-*`
 
-These packages have strict peer dependencies. Test thoroughly after updates.
+Test thoroughly after updates, especially the build output and hash router behavior.
 
 **Safe to update:**
 - `axios`
 - `socket.io-client`
+- `js-cookie`
 - `express`
 - `mongoose`
+- `@fortawesome/fontawesome-free`
 
 ## Troubleshooting
 
@@ -313,7 +333,7 @@ curl http://localhost:8000/
 
 # Frontend
 curl http://localhost:5173/
-# Should return HTML
+# Should return HTML with "ATEGO" title
 ```
 
 **Check environment variables:**
@@ -329,7 +349,7 @@ cat backend/.env
 ```bash
 # Frontend
 cd frontend
-rm -rf .svelte-kit build node_modules package-lock.json
+rm -rf build node_modules package-lock.json
 npm install
 
 # Backend
@@ -338,16 +358,21 @@ rm -rf node_modules package-lock.json
 npm install
 ```
 
+**Verify hash router works:**
+1. Open `http://localhost:5173/`
+2. Click "New Game" - URL should change to `/#/:gameId`
+3. Copy URL, open in new tab - it should load the game room without 404
+
 ## Contact & Resources
 
 - **Live Game:** Deployed on Render.com
 - **Repository:** Check git remotes for URL
 - **Framework Docs:**
-  - [SvelteKit](https://kit.svelte.dev/docs)
+  - [Vite](https://vitejs.dev/guide/)
   - [Socket.IO](https://socket.io/docs/)
   - [CreateJS](https://createjs.com/docs)
 
 ---
 
-*Last updated: 2026-04-19*
+*Last updated: 2026-04-23*
 *For questions or issues, check the git history and commit messages for context.*

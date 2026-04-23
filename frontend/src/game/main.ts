@@ -1,11 +1,10 @@
 import * as createjs from "createjs-module";
-import type io from "socket.io-client";
 import type { Socket } from "socket.io-client";
-import { drawGameField } from "$lib/game/field";
-import { Resources } from "$lib/game/resources";
-import { GamePiece } from "$lib/game/piece";
-import { flipFieldXIfRed, flipFieldYIfRed } from "$lib/game/utils";
-import type { gameState, Field, Piece } from "$lib/game/models";
+import type { gameState, Field, Piece } from "./models";
+import { drawGameField } from "./field";
+import { Resources } from "./resources";
+import { GamePiece } from "./piece";
+import { flipFieldXIfRed, flipFieldYIfRed } from "./utils";
 
 const nFieldsWidth: number = 4;
 const nFieldsHeight: number = 5;
@@ -64,9 +63,6 @@ function handleResourcesLoaded(): void {
 }
 
 function connectToServer(): void {
-  //   if (import.meta.env.VITE_SOCKET_ADRESS == undefined)
-  //     throw new Error("VITE_SOCKET_ADRESS not defined");
-  //   socket = io(import.meta.env.VITE_SOCKET_ADRESS);
   socket.emit("socketReady", gameId);
 
   socket.off("playerId");
@@ -208,7 +204,7 @@ function drawWaitingForOpponent(): void {
 
 function getSelectedPiecesOfHeroCharacterSpace(): GamePiece | undefined {
   for (const piece of heroCharacterSpace.children) {
-    if (piece instanceof GamePiece && piece.isSelected) return piece;
+    if (piece instanceof GamePiece && piece.isSelected) return piece as GamePiece;
   }
   return undefined;
 }

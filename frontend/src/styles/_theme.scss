@@ -1,6 +1,6 @@
 @mixin base-theme {
   --color--primary: #d1d0c5;
-  --color--unselected: #646669; // remove maybe
+  --color--unselected: #646669;
   --color--app-background: #323437;
   --color--component: #28292c;
   --color--component-brighter: #373a3e;
@@ -10,9 +10,7 @@
 
   --color--team-red: #DE3034;
   --color--team-yellow: #FEBE00;
-
 }
-
 
 @font-face {
     font-family: 'Forma';
